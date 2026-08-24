@@ -112,16 +112,17 @@ with st.sidebar:
         help="Get your free API key from https://console.groq.com/keys"
     )
     
+    # Dynamically fetch available models for this key
+    available_models = rag_engine.get_available_groq_models(api_key_input)
+    default_index = 0
+    if "llama3-8b-8192" in available_models:
+        default_index = available_models.index("llama3-8b-8192")
+
     groq_model = st.selectbox(
         "LLM Model",
-        options=[
-            "llama3-8b-8192",
-            "llama-3.1-8b-instant",
-            "llama-3.3-70b-versatile",
-            "mixtral-8x7b-32768"
-        ],
-        index=0,
-        help="Default model requested: llama3-8b-8192"
+        options=available_models,
+        index=default_index,
+        help="Models available for your Groq account. Default: llama3-8b-8192"
     )
 
     st.divider()
@@ -243,7 +244,8 @@ for msg in st.session_state.messages:
             st.markdown(msg["content"])
             # Display source citations if attached
             if "sources" in msg and msg["sources"]:
-                with st.expander(f"📚 View {len(msg['sources'])} Cited Source Chunks from ChromaDB"):
+                model_label = f" (Model: {msg.get('model_used', 'LLM')})" if msg.get('model_used') else ""
+                with st.expander(f"📚 View {len(msg['sources'])} Cited Source Chunks from ChromaDB{model_label}"):
                     for i, src in enumerate(msg["sources"], 1):
                         source_name = src.get("source", "Unknown Document")
                         page_num = src.get("page", "?")
@@ -311,9 +313,11 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                         full_response = gen_result["answer"]
                         st.markdown(full_response)
 
+                model_used = gen_result.get("model_used", groq_model)
+
                 # Show sources expander
                 if retrieved_sources:
-                    with st.expander(f"📚 View {len(retrieved_sources)} Cited Source Chunks from ChromaDB"):
+                    with st.expander(f"📚 View {len(retrieved_sources)} Cited Source Chunks from ChromaDB (Model: {model_used})"):
                         for i, src in enumerate(retrieved_sources, 1):
                             source_name = src.get("source", "Unknown Document")
                             page_num = src.get("page", "?")
@@ -340,8 +344,10 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                 st.session_state.messages.append({
                     "role": "assistant",
                     "content": full_response,
-                    "sources": retrieved_sources
+                    "sources": retrieved_sources,
+                    "model_used": model_used
                 })
 
             except Exception as e:
                 st.error(f"Error communicating with Groq API: {str(e)}")
+

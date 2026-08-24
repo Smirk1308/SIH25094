@@ -250,6 +250,31 @@ Instructions:
 """
         return prompt
 
+    @staticmethod
+    def get_available_groq_models(api_key: str) -> List[str]:
+        """Fetch active text generation models available for this Groq API key."""
+        if not api_key:
+            return ["llama3-8b-8192", "llama-3.3-70b-versatile", "llama3-70b-8192", "mixtral-8x7b-32768", "gemma2-9b-it"]
+        try:
+            client = Groq(api_key=api_key)
+            model_list = client.models.list()
+            active_models = []
+            for m in model_list.data:
+                model_id = m.id
+                # Filter out whisper, vision-preview, embedding, and safety guard models
+                if any(excluded in model_id.lower() for excluded in ["whisper", "guard", "embed", "safet"]):
+                    continue
+                active_models.append(model_id)
+            
+            # Prioritize llama3-8b-8192 if present, otherwise sort
+            if "llama3-8b-8192" in active_models:
+                active_models.remove("llama3-8b-8192")
+                active_models.insert(0, "llama3-8b-8192")
+            
+            return active_models if active_models else ["llama3-8b-8192", "llama-3.3-70b-versatile", "llama3-70b-8192"]
+        except Exception:
+            return ["llama3-8b-8192", "llama-3.3-70b-versatile", "llama3-70b-8192", "mixtral-8x7b-32768", "gemma2-9b-it"]
+
     def generate_answer(
         self,
         query: str,
@@ -259,7 +284,7 @@ Instructions:
         history: Optional[List[Dict[str, str]]] = None,
         stream: bool = False
     ) -> Any:
-        """Retrieve context and generate answer via Groq API."""
+        """Retrieve context and generate answer via Groq API with fallback support."""
         context_chunks = self.retrieve(query, top_k=top_k)
         prompt = self.build_prompt(query, context_chunks)
 
@@ -284,34 +309,65 @@ Instructions:
 
         messages.append({"role": "user", "content": prompt})
 
-        if stream:
-            response_stream = client.chat.completions.create(
-                model=model,
+        def try_create_completion(target_model: str, is_stream: bool):
+            return client.chat.completions.create(
+                model=target_model,
                 messages=messages,
                 temperature=0.4,
                 max_tokens=2048,
-                stream=True
+                stream=is_stream
             )
-            
-            def stream_generator() -> Generator[str, None, None]:
-                for chunk in response_stream:
-                    if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
-                        yield chunk.choices[0].delta.content
 
-            return {
-                "stream": stream_generator(),
-                "sources": context_chunks
-            }
-        else:
-            response = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=0.4,
-                max_tokens=2048,
-                stream=False
-            )
-            content = response.choices[0].message.content
-            return {
-                "answer": content,
-                "sources": context_chunks
-            }
+        # Attempt with requested model, fallback if model_not_found
+        try:
+            if stream:
+                response_stream = try_create_completion(model, is_stream=True)
+                
+                def stream_generator() -> Generator[str, None, None]:
+                    for chunk in response_stream:
+                        if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                            yield chunk.choices[0].delta.content
+
+                return {
+                    "stream": stream_generator(),
+                    "sources": context_chunks,
+                    "model_used": model
+                }
+            else:
+                response = try_create_completion(model, is_stream=False)
+                content = response.choices[0].message.content
+                return {
+                    "answer": content,
+                    "sources": context_chunks,
+                    "model_used": model
+                }
+        except Exception as e:
+            err_str = str(e)
+            # If model was not found (404), attempt fallback to standard llama3-8b-8192 or llama-3.3-70b-versatile
+            if "model_not_found" in err_str or "404" in err_str:
+                fallback_models = [m for m in ["llama3-8b-8192", "llama-3.3-70b-versatile", "llama3-70b-8192"] if m != model]
+                for fb_model in fallback_models:
+                    try:
+                        if stream:
+                            response_stream = try_create_completion(fb_model, is_stream=True)
+                            def stream_generator_fb() -> Generator[str, None, None]:
+                                for chunk in response_stream:
+                                    if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                                        yield chunk.choices[0].delta.content
+                            return {
+                                "stream": stream_generator_fb(),
+                                "sources": context_chunks,
+                                "model_used": fb_model
+                            }
+                        else:
+                            response = try_create_completion(fb_model, is_stream=False)
+                            content = response.choices[0].message.content
+                            return {
+                                "answer": content,
+                                "sources": context_chunks,
+                                "model_used": fb_model
+                            }
+                    except Exception:
+                        continue
+            raise e
+
