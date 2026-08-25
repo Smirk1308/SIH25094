@@ -1,6 +1,7 @@
 """
 Streamlit Web Application for Margdarshak J&K - AI Career Advisor.
-Complete Custom Visual Theme:
+Features:
+- Groq API Key loaded securely from st.secrets["GROQ_API_KEY"] (No UI key input)
 - Deep teal (#1B3A4B) & Saffron orange (#E8762C) palette on light (#F7F9FC) background
 - Google Font Inter typography
 - Custom user & bot chat bubbles with source citations
@@ -15,8 +16,20 @@ import streamlit as st
 from dotenv import load_dotenv
 from rag_engine import RAGEngine, DEFAULT_GROQ_MODEL, DOCS_DIR, CHROMA_DIR
 
-# Load environment variables
+# Load environment variables (fallback support)
 load_dotenv()
+
+# Load Groq API key from st.secrets
+def get_groq_api_key() -> str:
+    """Retrieve GROQ_API_KEY from st.secrets with environment variable fallback."""
+    try:
+        if "GROQ_API_KEY" in st.secrets:
+            return str(st.secrets["GROQ_API_KEY"]).strip()
+    except Exception:
+        pass
+    return os.getenv("GROQ_API_KEY", "").strip()
+
+groq_api_key = get_groq_api_key()
 
 # Page configuration - Wide layout and custom title
 st.set_page_config(
@@ -399,35 +412,25 @@ if "auto_indexed_once" not in st.session_state:
 with st.sidebar:
     st.markdown('<div class="sidebar-brand-header">🎓 Margdarshak J&K</div>', unsafe_allow_html=True)
     
-    # 1. Groq API Key
-    st.markdown("<p style='font-weight:600; font-size:0.95rem; margin-bottom:4px;'>🔑 Groq API Settings</p>", unsafe_allow_html=True)
-    env_api_key = os.getenv("GROQ_API_KEY", "")
-    api_key_input = st.text_input(
-        "Groq API Key",
-        value=env_api_key,
-        type="password",
-        help="Get your free API key from https://console.groq.com/keys",
-        label_visibility="collapsed"
-    )
+    # Model Selection (Auto-discovered using st.secrets API Key)
+    st.markdown("<p style='font-weight:600; font-size:0.95rem; margin-bottom:4px;'>🤖 AI Model Configuration</p>", unsafe_allow_html=True)
     
-    # Dynamically fetch available models for this key
-    available_models = rag_engine.get_available_groq_models(api_key_input)
+    available_models = rag_engine.get_available_groq_models(groq_api_key)
     default_index = 0
     if "llama3-8b-8192" in available_models:
         default_index = available_models.index("llama3-8b-8192")
 
-    st.markdown("<p style='font-weight:600; font-size:0.9rem; margin-top:8px; margin-bottom:2px;'>LLM Model</p>", unsafe_allow_html=True)
     groq_model = st.selectbox(
         "LLM Model",
         options=available_models,
         index=default_index,
-        help="Models available for your Groq account. Default: llama3-8b-8192",
+        help="Groq model (Default: llama3-8b-8192)",
         label_visibility="collapsed"
     )
 
     st.divider()
 
-    # 2. Knowledge Base & Document Management
+    # Knowledge Base & Document Management
     st.markdown("<p style='font-weight:600; font-size:0.95rem; margin-bottom:4px;'>📚 Knowledge Base (/docs)</p>", unsafe_allow_html=True)
     
     uploaded_files = st.file_uploader(
@@ -472,14 +475,14 @@ with st.sidebar:
 
     st.divider()
 
-    # 3. Retrieval Configuration
+    # Retrieval Configuration
     st.markdown("<p style='font-weight:600; font-size:0.95rem; margin-bottom:4px;'>⚙️ Retrieval Settings</p>", unsafe_allow_html=True)
     top_k = st.slider("Top Relevant Chunks (Top-K)", min_value=1, max_value=10, value=5)
     enable_stream = st.checkbox("Stream Responses", value=True)
 
     st.divider()
 
-    # 4. Clear Chat
+    # Clear Chat
     if st.button("🗑️ Clear Chat History", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
@@ -682,10 +685,10 @@ st.markdown("<hr style='margin: 28px 0; border: none; border-top: 1.5px solid #E
 # ==========================================
 st.markdown('<div class="section-title-custom">💬 Ask Your Career Advisor</div>', unsafe_allow_html=True)
 
-if not api_key_input:
+if not groq_api_key:
     st.markdown("""
-    <div style="background: #FFF7ED; border-left: 4px solid #E8762C; padding: 12px 16px; border-radius: 6px; font-size: 0.92rem; color: #9A3412; margin-bottom: 16px;">
-        🔑 <b>Welcome!</b> Please enter your <b>Groq API Key</b> in the sidebar to start asking career and scholarship questions.
+    <div style="background: #FEF2F2; border-left: 4px solid #EF4444; padding: 12px 16px; border-radius: 6px; font-size: 0.92rem; color: #991B1B; margin-bottom: 16px;">
+        ⚠️ <b>Groq API Key Missing:</b> Please set <code>GROQ_API_KEY</code> in <code>.streamlit/secrets.toml</code> or your Streamlit Cloud secrets.
     </div>
     """, unsafe_allow_html=True)
 
@@ -795,10 +798,10 @@ if user_input:
 if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
     current_prompt = st.session_state.messages[-1]["content"]
 
-    if not api_key_input:
+    if not groq_api_key:
         st.markdown("""
-        <div style="background: #FFF7ED; border-left: 4px solid #E8762C; padding: 12px 16px; border-radius: 6px; font-size: 0.92rem; color: #9A3412; margin-top: 12px;">
-            Please provide your <b>Groq API Key</b> in the sidebar to generate an answer.
+        <div style="background: #FEF2F2; border-left: 4px solid #EF4444; padding: 12px 16px; border-radius: 6px; font-size: 0.92rem; color: #991B1B; margin-top: 12px;">
+            ⚠️ Unable to generate response: <code>GROQ_API_KEY</code> is missing from <code>st.secrets</code>.
         </div>
         """, unsafe_allow_html=True)
     else:
@@ -807,7 +810,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
             if enable_stream:
                 gen_result = rag_engine.generate_answer(
                     query=current_prompt,
-                    api_key=api_key_input,
+                    api_key=groq_api_key,
                     model=groq_model,
                     top_k=top_k,
                     history=st.session_state.messages[:-1],
@@ -818,7 +821,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                 with st.spinner("Generating grounded advice from official documents..."):
                     gen_result = rag_engine.generate_answer(
                         query=current_prompt,
-                        api_key=api_key_input,
+                        api_key=groq_api_key,
                         model=groq_model,
                         top_k=top_k,
                         history=st.session_state.messages[:-1],
