@@ -1,6 +1,6 @@
 """
 Streamlit Web Application for Margdarshak J&K - AI Career Advisor.
-Rich visual redesign with gradient styling, custom HTML cards, and automatic Groq model selection.
+Knowledge base is pre-loaded from /docs at startup with no document management UI.
 """
 
 import os
@@ -8,8 +8,19 @@ import streamlit as st
 from dotenv import load_dotenv
 from rag_engine import RAGEngine, DEFAULT_GROQ_MODEL, DOCS_DIR, CHROMA_DIR
 
-# Load environment variables
+# Load environment variables (fallback support)
 load_dotenv()
+
+# Retrieve GROQ_API_KEY securely from st.secrets
+def get_groq_api_key() -> str:
+    try:
+        if "GROQ_API_KEY" in st.secrets:
+            return str(st.secrets["GROQ_API_KEY"]).strip()
+    except Exception:
+        pass
+    return os.getenv("GROQ_API_KEY", "").strip()
+
+groq_api_key = get_groq_api_key()
 
 # Page configuration
 st.set_page_config(
@@ -104,6 +115,7 @@ rag_engine = get_rag_engine()
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Pre-load & auto-index documents from /docs if not already in ChromaDB
 if "auto_indexed_once" not in st.session_state:
     stats = rag_engine.get_collection_stats()
     if stats["total_chunks"] == 0 and len(stats["pdf_files"]) > 0:
@@ -112,29 +124,14 @@ if "auto_indexed_once" not in st.session_state:
 
 
 # ==========================================
-# SIDEBAR CONTROLS
+# SIDEBAR CONTROLS (Clean, Query-Focused)
 # ==========================================
 with st.sidebar:
     st.title("🎓 Margdarshak J&K")
     
-    # 1. Groq API Key & Automatic Model Selection
-    st.subheader("🔑 Groq API Settings")
-    env_api_key = os.getenv("GROQ_API_KEY", "")
-    try:
-        if "GROQ_API_KEY" in st.secrets:
-            env_api_key = str(st.secrets["GROQ_API_KEY"]).strip()
-    except Exception:
-        pass
-
-    api_key_input = st.text_input(
-        "Groq API Key",
-        value=env_api_key,
-        type="password",
-        help="Get your free API key from https://console.groq.com/keys"
-    )
-    
-    # Dynamically fetch available models for this key
-    available_models = rag_engine.get_available_groq_models(api_key_input)
+    # Automatic Model Selection using loaded Groq key
+    st.subheader("🤖 AI Model")
+    available_models = rag_engine.get_available_groq_models(groq_api_key)
     default_index = 0
     if "llama3-8b-8192" in available_models:
         default_index = available_models.index("llama3-8b-8192")
@@ -148,49 +145,14 @@ with st.sidebar:
 
     st.divider()
 
-    # 2. Knowledge Base & Document Management
-    st.subheader("📚 Knowledge Base (`/docs`)")
-    uploaded_files = st.file_uploader(
-        "Upload PDF Guide(s)",
-        type=["pdf"],
-        accept_multiple_files=True,
-        help="Files will be saved into the /docs directory and indexed."
-    )
-    
-    if uploaded_files:
-        for uploaded_file in uploaded_files:
-            file_path = os.path.join(DOCS_DIR, uploaded_file.name)
-            with open(file_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-        st.success(f"Saved {len(uploaded_files)} file(s) to docs/.")
-
-    if st.button("🚀 Re-index All Documents"):
-        with st.spinner("Chunking PDFs & generating embeddings with all-MiniLM-L6-v2..."):
-            result = rag_engine.index_documents(force_reindex=True)
-            if result["status"] == "success":
-                st.success(f"Indexed {result['indexed_chunks']} chunks into ChromaDB!")
-            else:
-                st.warning(result["message"])
-
-    stats = rag_engine.get_collection_stats()
-    st.write(f"• **Indexed Chunks:** {stats['total_chunks']}")
-    st.write(f"• **PDFs in `/docs`:** {len(stats['pdf_files'])}")
-
-    if stats["pdf_files"]:
-        with st.expander("📄 View Files in /docs"):
-            for f in stats["pdf_files"]:
-                st.caption(f"• {f}")
-
-    st.divider()
-
-    # 3. Retrieval Configuration
-    st.subheader("⚙️ Retrieval Settings")
+    # Retrieval Configuration
+    st.subheader("⚙️ Settings")
     top_k = st.slider("Top Relevant Chunks (Top-K)", min_value=1, max_value=10, value=5)
     enable_stream = st.checkbox("Stream Responses", value=True)
 
     st.divider()
 
-    # 4. Clear Chat History
+    # Clear Chat History
     if st.button("🗑️ Clear Chat History"):
         st.session_state.messages = []
         st.rerun()
@@ -284,13 +246,6 @@ st.markdown("""
 # ==========================================
 st.markdown("### 💬 Ask Your Career Advisor")
 
-if not api_key_input:
-    st.info("💡 Please enter your **Groq API Key** in the sidebar to start asking questions.", icon="🔑")
-
-stats = rag_engine.get_collection_stats()
-if stats["total_chunks"] == 0:
-    st.warning("⚠️ No documents are currently indexed in `/docs`. Please upload PDFs in the sidebar and click **Re-index All Documents**.", icon="📁")
-
 # Quick suggested queries when chat is empty
 if len(st.session_state.messages) == 0:
     st.caption("🌟 Select a suggested topic or type your own question below:")
@@ -343,16 +298,16 @@ if user_input:
 if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
     current_prompt = st.session_state.messages[-1]["content"]
 
-    if not api_key_input:
+    if not groq_api_key:
         with st.chat_message("assistant"):
-            st.error("Please provide your Groq API Key in the sidebar to generate an answer.")
+            st.error("GROQ_API_KEY is missing from st.secrets. Please configure it in .streamlit/secrets.toml.")
     else:
         with st.chat_message("assistant"):
             try:
                 if enable_stream:
                     gen_result = rag_engine.generate_answer(
                         query=current_prompt,
-                        api_key=api_key_input,
+                        api_key=groq_api_key,
                         model=groq_model,
                         top_k=top_k,
                         history=st.session_state.messages[:-1],
@@ -363,7 +318,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                     with st.spinner("Generating answer from government documents..."):
                         gen_result = rag_engine.generate_answer(
                             query=current_prompt,
-                            api_key=api_key_input,
+                            api_key=groq_api_key,
                             model=groq_model,
                             top_k=top_k,
                             history=st.session_state.messages[:-1],
