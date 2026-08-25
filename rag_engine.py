@@ -221,8 +221,69 @@ class RAGEngine:
 
         return retrieved
 
-    def build_prompt(self, query: str, context_chunks: List[Dict[str, Any]]) -> str:
-        """Construct the prompt combining retrieved context and user question."""
+    @staticmethod
+    def format_conversation_history(history: Optional[List[Dict[str, Any]]], max_exchanges: int = 3) -> str:
+        """Format the last N conversation exchanges (up to 2*N messages) into a clean string for context injection."""
+        if not history:
+            return "No previous conversation."
+        
+        # Last 3 exchanges = up to 6 messages (3 user + 3 assistant)
+        max_messages = max_exchanges * 2
+        recent_turns = [m for m in history if m.get("role") in ["user", "assistant"]][-max_messages:]
+        
+        if not recent_turns:
+            return "No previous conversation."
+            
+        formatted = []
+        for turn in recent_turns:
+            role = "User" if turn.get("role") == "user" else "Assistant"
+            content = turn.get("content", "").strip()
+            formatted.append(f"{role}: {content}")
+            
+        return "\n".join(formatted)
+
+    def contextualize_query(
+        self,
+        query: str,
+        history: Optional[List[Dict[str, Any]]],
+        client: Groq,
+        model: str = DEFAULT_GROQ_MODEL
+    ) -> str:
+        """Reformulate follow-up questions (e.g., 'what about scholarships for that?') into a standalone query using conversation history."""
+        if not history or len(history) < 2:
+            return query
+
+        history_context = self.format_conversation_history(history, max_exchanges=3)
+        if history_context == "No previous conversation.":
+            return query
+
+        condense_prompt = f"""Given the following conversation history between a user and a Career Advisor, and a follow-up question from the user, rephrase the follow-up question into a concise, standalone search query that includes all necessary context (such as the specific role, degree, skill, or field previously mentioned).
+
+Conversation History (Last 3 Exchanges):
+{history_context}
+
+Follow-up Question: {query}
+
+Instructions:
+- If the question contains pronouns or references like 'that', 'it', 'for this', 'for that', replace them with the concrete subject from the conversation.
+- Output ONLY the standalone search query. Do NOT answer the question.
+
+Standalone Query:"""
+
+        try:
+            resp = client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": condense_prompt}],
+                max_tokens=60,
+                temperature=0.0
+            )
+            standalone = resp.choices[0].message.content.strip().strip('"\'')
+            return standalone if standalone else query
+        except Exception:
+            return query
+
+    def build_prompt(self, query: str, context_chunks: List[Dict[str, Any]], history_str: str = "") -> str:
+        """Construct the prompt combining retrieved context, conversation history, and user question."""
         if not context_chunks:
             context_str = "No specific reference documents available."
         else:
@@ -235,18 +296,23 @@ class RAGEngine:
                 )
             context_str = "\n\n".join(formatted_chunks)
 
+        history_section = ""
+        if history_str and history_str != "No previous conversation.":
+            history_section = f"Conversation History (Last 3 Exchanges):\n{history_str}\n\n"
+
         prompt = f"""You are an expert AI Career Advisor. Guide the user with professional, actionable, and structured advice.
 
-Here is the retrieved context from career guidance documents:
+{history_section}Retrieved Context from Career Documents:
 {context_str}
 
-User Question: {query}
+Current User Question: {query}
 
 Instructions:
 1. Provide a comprehensive, structured response (using bullet points, bold key terms, and step-by-step guidance).
-2. Ground your advice in the provided context wherever applicable.
-3. If the context does not fully answer the question, supplement with industry-standard career best practices while clearly distinguishing general advice.
-4. Reference the specific sources (e.g., [Source 1], [Source 2]) when referencing facts from the documents.
+2. Take into account previous conversation context and follow-up intent.
+3. Ground your advice in the provided reference context wherever applicable.
+4. If the context does not fully answer the question, supplement with industry-standard career best practices while clearly distinguishing general advice.
+5. Reference the specific sources (e.g., [Source 1], [Source 2]) when referencing facts from the documents.
 """
         return prompt
 
@@ -284,28 +350,37 @@ Instructions:
         history: Optional[List[Dict[str, str]]] = None,
         stream: bool = False
     ) -> Any:
-        """Retrieve context and generate answer via Groq API with fallback support."""
-        context_chunks = self.retrieve(query, top_k=top_k)
-        prompt = self.build_prompt(query, context_chunks)
-
+        """Retrieve context and generate answer via Groq API with persistent conversation memory."""
         client = Groq(api_key=api_key)
 
+        # 1. Contextualize query if there is conversation history (for follow-up questions like "what about scholarships for that?")
+        search_query = self.contextualize_query(query, history, client=client, model=model)
+        
+        # 2. Retrieve top-k context chunks using the contextualized search query
+        context_chunks = self.retrieve(search_query, top_k=top_k)
+
+        # 3. Format the last 3 exchanges (up to 6 messages) as conversation history
+        history_str = self.format_conversation_history(history, max_exchanges=3)
+        prompt = self.build_prompt(query, context_chunks, history_str=history_str)
+
+        # 4. Assemble messages for chat completion
         messages = [
             {
                 "role": "system",
                 "content": (
                     "You are a helpful, authoritative, and encouraging Career Advisor. "
                     "You provide actionable career guidance, resume suggestions, interview strategies, "
-                    "and technical roadmaps based on provided documentation and industry standards."
+                    "and technical roadmaps based on provided documentation and industry standards. "
+                    "Maintain continuity with the ongoing conversation."
                 )
             }
         ]
 
-        # Add conversation history if available (last 4 turns)
+        # Pass the last 3 exchanges (up to 6 turns) as role-based chat history
         if history:
-            for turn in history[-4:]:
-                if turn.get("role") in ["user", "assistant"]:
-                    messages.append({"role": turn["role"], "content": turn["content"]})
+            recent_turns = [turn for turn in history if turn.get("role") in ["user", "assistant"]][-6:]
+            for turn in recent_turns:
+                messages.append({"role": turn["role"], "content": turn["content"]})
 
         messages.append({"role": "user", "content": prompt})
 
@@ -331,6 +406,7 @@ Instructions:
                 return {
                     "stream": stream_generator(),
                     "sources": context_chunks,
+                    "search_query": search_query,
                     "model_used": model
                 }
             else:
@@ -339,6 +415,7 @@ Instructions:
                 return {
                     "answer": content,
                     "sources": context_chunks,
+                    "search_query": search_query,
                     "model_used": model
                 }
         except Exception as e:
@@ -357,6 +434,7 @@ Instructions:
                             return {
                                 "stream": stream_generator_fb(),
                                 "sources": context_chunks,
+                                "search_query": search_query,
                                 "model_used": fb_model
                             }
                         else:
@@ -365,9 +443,11 @@ Instructions:
                             return {
                                 "answer": content,
                                 "sources": context_chunks,
+                                "search_query": search_query,
                                 "model_used": fb_model
                             }
                     except Exception:
                         continue
             raise e
+
 

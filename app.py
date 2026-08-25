@@ -286,10 +286,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
     else:
         with st.chat_message("assistant", avatar="💼"):
             try:
-                # 1. Retrieve top-k chunks
-                retrieved_sources = rag_engine.retrieve(current_prompt, top_k=top_k)
-                
-                # 2. Call Groq LLM
+                # Call Groq LLM with persistent conversation history (last 3 exchanges)
                 if enable_stream:
                     gen_result = rag_engine.generate_answer(
                         query=current_prompt,
@@ -314,10 +311,13 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                         st.markdown(full_response)
 
                 model_used = gen_result.get("model_used", groq_model)
+                retrieved_sources = gen_result.get("sources", [])
+                search_query = gen_result.get("search_query", current_prompt)
 
                 # Show sources expander
                 if retrieved_sources:
-                    with st.expander(f"📚 View {len(retrieved_sources)} Cited Source Chunks from ChromaDB (Model: {model_used})"):
+                    query_note = f" | Search: '{search_query}'" if search_query != current_prompt else ""
+                    with st.expander(f"📚 View {len(retrieved_sources)} Cited Source Chunks from ChromaDB (Model: {model_used}{query_note})"):
                         for i, src in enumerate(retrieved_sources, 1):
                             source_name = src.get("source", "Unknown Document")
                             page_num = src.get("page", "?")
@@ -340,14 +340,16 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                                 unsafe_allow_html=True
                             )
 
-                # Save assistant response to state
+                # Save assistant response to persistent session state
                 st.session_state.messages.append({
                     "role": "assistant",
                     "content": full_response,
                     "sources": retrieved_sources,
-                    "model_used": model_used
+                    "model_used": model_used,
+                    "search_query": search_query
                 })
 
             except Exception as e:
                 st.error(f"Error communicating with Groq API: {str(e)}")
+
 

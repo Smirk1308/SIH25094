@@ -91,6 +91,45 @@ class TestRAGCareerAdvisor(unittest.TestCase):
         self.assertGreater(stats["total_chunks"], 0)
         self.assertTrue(len(stats["pdf_files"]) >= 2)
 
+    def test_06_conversation_history_formatting(self):
+        """Test formatting the last 3 exchanges (up to 6 messages) for context."""
+        # 5 exchanges (10 messages)
+        mock_history = [
+            {"role": "user", "content": "Question 1: What is SWE?"},
+            {"role": "assistant", "content": "Answer 1: SWE is software engineering."},
+            {"role": "user", "content": "Question 2: What about Data Science?"},
+            {"role": "assistant", "content": "Answer 2: Data Science is analyzing data."},
+            {"role": "user", "content": "Question 3: How to become a ML Engineer?"},
+            {"role": "assistant", "content": "Answer 3: Master PyTorch and MLOps."},
+            {"role": "user", "content": "Question 4: What is the salary?"},
+            {"role": "assistant", "content": "Answer 4: Salary ranges from $100k-$200k."},
+            {"role": "user", "content": "Question 5: Can I get remote jobs?"},
+            {"role": "assistant", "content": "Answer 5: Yes, remote jobs are common."}
+        ]
+        
+        formatted = self.engine.format_conversation_history(mock_history, max_exchanges=3)
+        # Should contain Question 3, 4, 5 and Answer 3, 4, 5 (last 3 exchanges)
+        self.assertIn("Question 3", formatted)
+        self.assertIn("Question 4", formatted)
+        self.assertIn("Question 5", formatted)
+        # Should NOT contain Question 1 and 2 (older exchanges)
+        self.assertNotIn("Question 1", formatted)
+        self.assertNotIn("Question 2", formatted)
+        
+        # Verify prompt with history
+        prompt = self.engine.build_prompt("What about scholarships for that?", [], history_str=formatted)
+        self.assertIn("Conversation History (Last 3 Exchanges):", prompt)
+        self.assertIn("Question 5: Can I get remote jobs?", prompt)
+        self.assertIn("Current User Question: What about scholarships for that?", prompt)
+
+    def test_07_contextualize_query_fallback(self):
+        """Test contextualize_query behavior when no client or empty history."""
+        # When history is empty, should return original query
+        query = "What are the job prospects?"
+        result = self.engine.contextualize_query(query, [], client=None)
+        self.assertEqual(result, query)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
