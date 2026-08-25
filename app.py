@@ -1,7 +1,9 @@
 """
-Streamlit Web Application for RAG-based Career Advisor.
-Uses ChromaDB vector store, HuggingFace all-MiniLM-L6-v2 embeddings,
-and Groq API (llama3-8b-8192) for fast, grounded career advice.
+Streamlit Web Application for Margdarshak J&K - AI Career Advisor.
+Features:
+- Full responsive Dashboard with 5 specific ordered sections
+- RAG pipeline powered by ChromaDB, all-MiniLM-L6-v2 embeddings, and Groq API
+- Persistent conversation memory (last 3 exchanges) with multi-turn query contextualization
 """
 
 import os
@@ -14,27 +16,126 @@ load_dotenv()
 
 # Page configuration
 st.set_page_config(
-    page_title="AI Career Advisor | RAG Assistant",
-    page_icon="💼",
+    page_title="Margdarshak J&K | AI Career Advisor",
+    page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for styling
+# Custom CSS for styling and mobile responsiveness
 st.markdown("""
 <style>
-    /* Main title and header */
-    .main-header {
-        font-size: 2.2rem;
+    /* Hero Banner */
+    .hero-banner {
+        background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 50%, #047857 100%);
+        color: white;
+        padding: 32px 28px;
+        border-radius: 14px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    }
+    .hero-title {
+        font-size: 2.3rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin-bottom: 8px;
+        color: #FFFFFF;
+    }
+    .hero-tagline {
+        font-size: 1.15rem;
+        font-weight: 500;
+        color: #E0E7FF;
+        margin-bottom: 0;
+        line-height: 1.5;
+    }
+    .hero-badge {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(4px);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: #F8FAFC;
+    }
+
+    /* Section Headings */
+    .section-title {
+        font-size: 1.35rem;
         font-weight: 700;
         color: #1E3A8A;
-        margin-bottom: 0.2rem;
+        margin-top: 18px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
-    .sub-header {
+    .section-desc {
+        font-size: 0.98rem;
+        color: #334155;
+        line-height: 1.6;
+        margin-bottom: 16px;
+    }
+
+    /* Audience Cards */
+    .audience-card {
+        background: #F8FAFC;
+        border: 1px solid #CBD5E1;
+        border-top: 4px solid #1E40AF;
+        border-radius: 10px;
+        padding: 18px 16px;
+        margin-bottom: 14px;
+        height: 100%;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .audience-icon {
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+    }
+    .audience-title {
+        font-weight: 700;
         font-size: 1.05rem;
-        color: #4B5563;
-        margin-bottom: 1.5rem;
+        color: #0F172A;
+        margin-bottom: 6px;
     }
+    .audience-desc {
+        font-size: 0.88rem;
+        color: #475569;
+        line-height: 1.45;
+    }
+
+    /* Feature Cards */
+    .feature-card {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        padding: 16px 14px;
+        margin-bottom: 12px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        min-height: 110px;
+    }
+    .feature-card:hover {
+        border-color: #3B82F6;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.08);
+    }
+    .feature-icon {
+        font-size: 1.6rem;
+        margin-bottom: 6px;
+    }
+    .feature-name {
+        font-weight: 700;
+        font-size: 0.98rem;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+    .feature-sub {
+        font-size: 0.84rem;
+        color: #64748B;
+        line-height: 1.35;
+    }
+
     /* Source chunk card styling */
     .source-card {
         background-color: #F8FAFC;
@@ -63,7 +164,6 @@ st.markdown("""
         font-size: 0.75rem;
         font-weight: 600;
     }
-    /* Stat box in sidebar */
     .stat-box {
         background-color: #F1F5F9;
         border-radius: 8px;
@@ -88,7 +188,6 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "auto_indexed_once" not in st.session_state:
-    # Check if DB is empty and documents exist; if so, run initial indexing
     stats = rag_engine.get_collection_stats()
     if stats["total_chunks"] == 0 and len(stats["pdf_files"]) > 0:
         rag_engine.index_documents(force_reindex=False)
@@ -100,7 +199,7 @@ if "auto_indexed_once" not in st.session_state:
 # ==========================================
 with st.sidebar:
     st.image("https://img.icons8.com/isometric/100/parse-resumes.png", width=70)
-    st.title("Career Advisor Config")
+    st.title("Advisor Settings")
     
     # 1. Groq API Key
     st.subheader("🔑 Groq API Settings")
@@ -130,7 +229,6 @@ with st.sidebar:
     # 2. Knowledge Base & Document Management
     st.subheader("📚 Knowledge Base (`/docs`)")
     
-    # Upload new PDF files
     uploaded_files = st.file_uploader(
         "Upload PDF Guide(s)",
         type=["pdf"],
@@ -145,7 +243,6 @@ with st.sidebar:
                 f.write(uploaded_file.getbuffer())
         st.success(f"Saved {len(uploaded_files)} file(s) to docs/.")
 
-    # Re-index Button
     if st.button("🚀 Re-index All Documents", use_container_width=True):
         with st.spinner("Chunking PDFs & generating embeddings with all-MiniLM-L6-v2..."):
             result = rag_engine.index_documents(force_reindex=True)
@@ -154,7 +251,6 @@ with st.sidebar:
             else:
                 st.warning(result["message"])
 
-    # Collection Stats
     stats = rag_engine.get_collection_stats()
     st.markdown(
         f"""
@@ -189,55 +285,197 @@ with st.sidebar:
 
 
 # ==========================================
-# MAIN INTERFACE
+# MAIN INTERFACE - REDESIGNED DASHBOARD
 # ==========================================
-st.markdown('<div class="main-header">💼 AI Career Advisor</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="sub-header">Personalized career roadmaps, resume tips, and interview preparation '
-    'grounded in your documents via <b>ChromaDB</b> & <b>Groq LLaMA-3</b>.</div>',
-    unsafe_allow_html=True
-)
+
+# 1. HERO BANNER
+st.markdown("""
+<div class="hero-banner">
+    <span class="hero-badge">🎓 AI CAREER GUIDANCE PORTAL</span>
+    <div class="hero-title">Margdarshak J&K</div>
+    <div class="hero-tagline">Free. Cited. Offline-ready. Career guidance for every student in J&K.</div>
+</div>
+""", unsafe_allow_html=True)
+
+# 2. WHY THIS PLATFORM EXISTS
+st.markdown('<div class="section-title">💡 Why this platform exists</div>', unsafe_allow_html=True)
+st.markdown("""
+<p class="section-desc">
+    <b>J&K has fewer than 200 career counselors for 2 million students. Most rural schools have none. This platform gives every student a free, 24/7 AI advisor that answers from real government documents.</b>
+</p>
+""", unsafe_allow_html=True)
+
+# Visual Metric Counters
+m_col1, m_col2, m_col3, m_col4 = st.columns(4)
+with m_col1:
+    st.metric(label="Career Counselors", value="< 200", delta="Severe shortage", delta_color="inverse")
+with m_col2:
+    st.metric(label="Students in J&K", value="2.0 Million", delta="Target audience")
+with m_col3:
+    st.metric(label="Advisor Availability", value="24 / 7", delta="Instant access")
+with m_col4:
+    st.metric(label="Cost to Students", value="₹0 Free", delta="Open for all")
+
+st.markdown("<hr style='margin: 20px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
+
+# 3. WHO IT'S FOR
+st.markdown('<div class="section-title">👥 Who it\'s for</div>', unsafe_allow_html=True)
+c1, c2, c3 = st.columns(3)
+
+with c1:
+    st.markdown("""
+    <div class="audience-card">
+        <div class="audience-icon">🎓</div>
+        <div class="audience-title">Class 12 Students</div>
+        <div class="audience-desc">
+            Deciding stream, degree courses, entrance examinations (CUET, JEE, NEET), and college options across Jammu & Kashmir and all-India universities.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with c2:
+    st.markdown("""
+    <div class="audience-card" style="border-top-color: #059669;">
+        <div class="audience-icon">💰</div>
+        <div class="audience-title">Scholarships & Aid Seekers</div>
+        <div class="audience-desc">
+            Discovering PMSSS (Prime Minister's Special Scholarship Scheme for J&K), National Scholarship Portal (NSP), minority grants, and fee waivers.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with c3:
+    st.markdown("""
+    <div class="audience-card" style="border-top-color: #7C3AED;">
+        <div class="audience-icon">🌱</div>
+        <div class="audience-title">First-Generation Learners</div>
+        <div class="audience-desc">
+            Clear, step-by-step guidance for students with no family guidance navigating admissions, paperwork, eligibility criteria, and job readiness.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("<hr style='margin: 20px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
+
+# 4. KEY FEATURES
+st.markdown('<div class="section-title">⚡ Key Features</div>', unsafe_allow_html=True)
+
+f_row1_col1, f_row1_col2, f_row1_col3 = st.columns(3)
+with f_row1_col1:
+    st.markdown("""
+    <div class="feature-card">
+        <div class="feature-icon">📶</div>
+        <div class="feature-name">2G Operability</div>
+        <div class="feature-sub">Works on slow connections and low-bandwidth rural networks.</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with f_row1_col2:
+    st.markdown("""
+    <div class="feature-card">
+        <div class="feature-icon">📑</div>
+        <div class="feature-name">Cited Answers</div>
+        <div class="feature-sub">Every response links directly to verified source documents.</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with f_row1_col3:
+    st.markdown("""
+    <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <div class="feature-name">Multilingual</div>
+        <div class="feature-sub">Supports queries in Hindi and English.</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+f_row2_col1, f_row2_col2, f_row2_col3 = st.columns(3)
+with f_row2_col1:
+    st.markdown("""
+    <div class="feature-card">
+        <div class="feature-icon">💸</div>
+        <div class="feature-name">Zero Cost</div>
+        <div class="feature-sub">Completely free with no paywalls or hidden subscriptions.</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with f_row2_col2:
+    st.markdown("""
+    <div class="feature-card">
+        <div class="feature-icon">🏛️</div>
+        <div class="feature-name">Government Data Only</div>
+        <div class="feature-sub">Grounded strictly in authentic notifications — no hallucination.</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with f_row2_col3:
+    st.markdown("""
+    <div class="feature-card">
+        <div class="feature-icon">💾</div>
+        <div class="feature-name">Offline Cache</div>
+        <div class="feature-sub">Top queries and vector indices pre-loaded for high speed.</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("<hr style='margin: 20px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
+
+# 5. HOW TO USE
+st.markdown('<div class="section-title">📋 How to Use — 3 Simple Rules</div>', unsafe_allow_html=True)
+
+r_col1, r_col2, r_col3 = st.columns(3)
+with r_col1:
+    st.info("📏 **Rule 1: Keep queries under 200 characters**\n\nConcise questions give the fastest and most accurate matching.")
+with r_col2:
+    st.success("🎯 **Rule 2: Be specific**\n\nInclude your **marks**, **district**, and **stream** (e.g., *'Class 12 Medical, 85%, Anantnag'*).")
+with r_col3:
+    st.info("❓ **Rule 3: Ask one question at a time**\n\nBreak multi-part queries into single, focused questions for precise answers.")
+
+st.markdown("<hr style='margin: 20px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
+
+# ==========================================
+# INTERACTIVE CHAT ADVISOR
+# ==========================================
+st.markdown('<div class="section-title">💬 Ask Your Career Advisor</div>', unsafe_allow_html=True)
 
 # Notification if no API key or empty vector DB
 if not api_key_input:
-    st.info("💡 **Welcome!** Please enter your **Groq API Key** in the sidebar to start asking questions.", icon="🔑")
+    st.info("💡 Please enter your **Groq API Key** in the sidebar to start asking questions.", icon="🔑")
 
 stats = rag_engine.get_collection_stats()
 if stats["total_chunks"] == 0:
-    st.warning("⚠️ No documents are currently indexed. Please place PDF files in the `/docs` folder or upload them in the sidebar and click **Re-index All Documents**.", icon="📁")
+    st.warning("⚠️ No documents are currently indexed in `/docs`. Please upload PDFs in the sidebar and click **Re-index All Documents**.", icon="📁")
 
 # Quick Prompt Suggestions (when chat is empty)
 if len(st.session_state.messages) == 0:
-    st.markdown("##### 🌟 Suggested Topics to Explore:")
+    st.caption("🌟 **Click any suggested question to get started:**")
     col1, col2 = st.columns(2)
     
     sample_queries = [
-        "What are the essential technical skills for a Software Engineer?",
-        "How should I structure my resume using the Google XYZ formula?",
-        "What is the roadmap to transition into Data Science and AI?",
-        "How should I prepare for coding and system design interviews?"
+        "What are the eligibility and stipend details for PMSSS J&K Scholarship?",
+        "What are the best career paths after Class 12 Science (Medical vs Non-Medical)?",
+        "How do I apply for government scholarships on National Scholarship Portal (NSP)?",
+        "What are the essential technical skills and roadmap for Software Engineering?"
     ]
 
     selected_prompt = None
     with col1:
-        if st.button(f"💡 {sample_queries[0]}", use_container_width=True):
+        if st.button(f"🎓 {sample_queries[0]}", use_container_width=True):
             selected_prompt = sample_queries[0]
-        if st.button(f"📄 {sample_queries[1]}", use_container_width=True):
+        if st.button(f"🔬 {sample_queries[1]}", use_container_width=True):
             selected_prompt = sample_queries[1]
     with col2:
-        if st.button(f"🤖 {sample_queries[2]}", use_container_width=True):
+        if st.button(f"💰 {sample_queries[2]}", use_container_width=True):
             selected_prompt = sample_queries[2]
-        if st.button(f"🎯 {sample_queries[3]}", use_container_width=True):
+        if st.button(f"💻 {sample_queries[3]}", use_container_width=True):
             selected_prompt = sample_queries[3]
 
     if selected_prompt:
         st.session_state.messages.append({"role": "user", "content": selected_prompt})
         st.rerun()
 
-# Display Conversation History
+# Display Conversation History at the start of each rerender
 for msg in st.session_state.messages:
     if msg["role"] == "user":
-        with st.chat_message("user", avatar="🧑‍💻"):
+        with st.chat_message("user", avatar="🧑‍🎓"):
             st.markdown(msg["content"])
     else:
         with st.chat_message("assistant", avatar="💼"):
@@ -269,7 +507,7 @@ for msg in st.session_state.messages:
                         )
 
 # Chat Input Handler
-user_input = st.chat_input("Ask about career paths, resume strategies, interview roadmaps, or skills...")
+user_input = st.chat_input("Ask about college admissions, PMSSS, scholarships, or careers (e.g. 'PMSSS eligibility for Class 12')...")
 
 # Process user input (either from chat_input or pre-seeded prompt)
 if user_input:
@@ -351,5 +589,3 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
 
             except Exception as e:
                 st.error(f"Error communicating with Groq API: {str(e)}")
-
-

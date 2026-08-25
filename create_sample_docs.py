@@ -176,7 +176,73 @@ def generate_ds_ai_guide():
     doc.build(story)
     print(f"Generated: {pdf_path}")
 
+def generate_jk_guide():
+    pdf_path = os.path.join(DOCS_DIR, "jk_scholarships_and_admissions_guide.pdf")
+    doc = SimpleDocTemplate(pdf_path, pagesize=letter, rightMargin=54, leftMargin=54, topMargin=54, bottomMargin=54)
+    styles = getSampleStyleSheet()
+    
+    title_style = ParagraphStyle(
+        'DocTitle',
+        parent=styles['Heading1'],
+        fontSize=20,
+        leading=24,
+        textColor=colors.HexColor('#1E3A8A'),
+        spaceAfter=12
+    )
+    h2_style = ParagraphStyle(
+        'SectionHeader',
+        parent=styles['Heading2'],
+        fontSize=14,
+        leading=17,
+        textColor=colors.HexColor('#1E40AF'),
+        spaceBefore=12,
+        spaceAfter=6
+    )
+    body_style = ParagraphStyle(
+        'BodyTextCustom',
+        parent=styles['Normal'],
+        fontSize=10,
+        leading=14,
+        textColor=colors.HexColor('#1F2937'),
+        spaceAfter=8
+    )
+
+    story = []
+    story.append(Paragraph("Jammu & Kashmir Higher Education, PMSSS & Scholarships Guide", title_style))
+    story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#3B82F6'), spaceAfter=12))
+
+    story.append(Paragraph("1. Prime Minister's Special Scholarship Scheme (PMSSS) for J&K", h2_style))
+    story.append(Paragraph(
+        "PMSSS is a flagship initiative managed by AICTE for permanent residents/domiciles of J&K and Ladakh who have passed Class 12 from JKBOSE or CBSE schools located in J&K/Ladakh. "
+        "Eligibility Criteria: Family income must be below Rs 8.0 Lakh per annum. Students must have passed Class 12 in the current academic year. "
+        "Financial Support: 1. Academic Fee: Up to Rs 1.25 Lakh/year for Professional/Engineering courses, up to Rs 3.0 Lakh/year for Medical/BDS, and up to Rs 30,000/year for General Degree courses (BA, BSc, BCom). "
+        "2. Maintenance Allowance: Rs 1.0 Lakh per annum (disbursed in 10 equal installments of Rs 10,000) directly into student's Aadhaar-seeded bank account for hostel and mess expenses.",
+        body_style
+    ))
+
+    story.append(Paragraph("2. National Scholarship Portal (NSP) & Post-Matric Aid", h2_style))
+    story.append(Paragraph(
+        "Students can apply on scholarships.gov.in for Central Sector Scheme of Scholarship for College and University Students, Post-Matric Scholarship for SC/ST/OBC/EBC, and Merit-cum-Means Scholarship for Minority Communities. "
+        "Key documents required: Domicile Certificate, Class 10 & 12 Marksheets, Annual Family Income Certificate issued by competent Revenue Authority (Tehsildar), Category Certificate (if applicable), and Bank Passbook copy.",
+        body_style
+    ))
+
+    story.append(Paragraph("3. Top Government Colleges and Universities in J&K", h2_style))
+    story.append(Paragraph(
+        "Premier institutions in Jammu & Kashmir include: "
+        "Engineering & Tech: NIT Srinagar, IIT Jammu, GCET Jammu, GCET Safapora Kashmir, IUST Awantipora, SMVDU Katra. "
+        "Medical & Healthcare: GMC Srinagar, GMC Jammu, SKIMS Soura, GMC Anantnag, GMC Baramulla, GMC Kathua, GMC Rajouri. "
+        "Central & State Universities: University of Kashmir (Srinagar), University of Jammu, Central University of Kashmir (Ganderbal), Central University of Jammu, SKUAST-K and SKUAST-J for Agriculture and Veterinary Sciences. "
+        "Admission to degree courses is conducted through CUET (Common University Entrance Test) and BOPEE (J&K Board of Professional Entrance Examinations).",
+        body_style
+    ))
+
+    doc.build(story)
+    print(f"Generated: {pdf_path}")
+
 if __name__ == "__main__":
     generate_swe_guide()
     generate_ds_ai_guide()
+    generate_jk_guide()
     print("All sample PDF documents created successfully.")
+
