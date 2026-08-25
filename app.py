@@ -1,11 +1,13 @@
 """
 Streamlit Web Application for Margdarshak J&K - AI Career Advisor.
 Knowledge base is pre-loaded from /docs at startup with no document management UI.
+Automatic Groq model selection on first load only.
 """
 
 import os
 import streamlit as st
 from dotenv import load_dotenv
+from groq import Groq
 from rag_engine import RAGEngine, DEFAULT_GROQ_MODEL, DOCS_DIR, CHROMA_DIR
 
 # Load environment variables (fallback support)
@@ -21,6 +23,20 @@ def get_groq_api_key() -> str:
     return os.getenv("GROQ_API_KEY", "").strip()
 
 groq_api_key = get_groq_api_key()
+groq_client = Groq(api_key=groq_api_key) if groq_api_key else None
+
+def get_best_groq_model(client):
+    try:
+        models = client.models.list().data
+        chat_models = [
+            m for m in models
+            if not any(x in m.id.lower()
+               for x in ["whisper", "guard", "vision", "tool"])
+        ]
+        chat_models.sort(key=lambda m: m.created, reverse=True)
+        return chat_models[0].id if chat_models else "openai/gpt-oss-20b"
+    except Exception:
+        return "openai/gpt-oss-20b"
 
 # Page configuration
 st.set_page_config(
@@ -115,6 +131,10 @@ rag_engine = get_rag_engine()
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Initialize automatic Groq model on first load only
+if "selected_model" not in st.session_state:
+    st.session_state.selected_model = get_best_groq_model(groq_client)
+
 # Pre-load & auto-index documents from /docs if not already in ChromaDB
 if "auto_indexed_once" not in st.session_state:
     stats = rag_engine.get_collection_stats()
@@ -128,20 +148,7 @@ if "auto_indexed_once" not in st.session_state:
 # ==========================================
 with st.sidebar:
     st.title("🎓 Margdarshak J&K")
-    
-    # Automatic Model Selection using loaded Groq key
-    st.subheader("🤖 AI Model")
-    available_models = rag_engine.get_available_groq_models(groq_api_key)
-    default_index = 0
-    if "llama3-8b-8192" in available_models:
-        default_index = available_models.index("llama3-8b-8192")
-
-    groq_model = st.selectbox(
-        "LLM Model",
-        options=available_models,
-        index=default_index,
-        help="Models available for your Groq account. Default: llama3-8b-8192"
-    )
+    st.sidebar.caption(f"Model: {st.session_state.selected_model}")
 
     st.divider()
 
@@ -308,7 +315,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                     gen_result = rag_engine.generate_answer(
                         query=current_prompt,
                         api_key=groq_api_key,
-                        model=groq_model,
+                        model=st.session_state.selected_model,
                         top_k=top_k,
                         history=st.session_state.messages[:-1],
                         stream=True
@@ -319,7 +326,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                         gen_result = rag_engine.generate_answer(
                             query=current_prompt,
                             api_key=groq_api_key,
-                            model=groq_model,
+                            model=st.session_state.selected_model,
                             top_k=top_k,
                             history=st.session_state.messages[:-1],
                             stream=False
@@ -327,7 +334,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                         full_response = gen_result["answer"]
                         st.markdown(full_response)
 
-                model_used = gen_result.get("model_used", groq_model)
+                model_used = gen_result.get("model_used", st.session_state.selected_model)
                 retrieved_sources = gen_result.get("sources", [])
                 search_query = gen_result.get("search_query", current_prompt)
 
