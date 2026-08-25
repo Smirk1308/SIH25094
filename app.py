@@ -1,6 +1,6 @@
 """
 Streamlit Web Application for Margdarshak J&K - AI Career Advisor.
-Uses only the targeted CSS block requested by the user.
+Rich visual redesign with gradient styling, custom HTML cards, and automatic Groq model selection.
 """
 
 import os
@@ -11,17 +11,6 @@ from rag_engine import RAGEngine, DEFAULT_GROQ_MODEL, DOCS_DIR, CHROMA_DIR
 # Load environment variables
 load_dotenv()
 
-# Retrieve GROQ_API_KEY securely from st.secrets
-def get_groq_api_key() -> str:
-    try:
-        if "GROQ_API_KEY" in st.secrets:
-            return str(st.secrets["GROQ_API_KEY"]).strip()
-    except Exception:
-        pass
-    return os.getenv("GROQ_API_KEY", "").strip()
-
-groq_api_key = get_groq_api_key()
-
 # Page configuration
 st.set_page_config(
     page_title="Margdarshak J&K | AI Career Advisor",
@@ -31,54 +20,71 @@ st.set_page_config(
 )
 
 # ==========================================
-# TARGETED CSS OVERRIDES ONLY
+# GLOBAL CSS OVERRIDES
 # ==========================================
 st.markdown("""
 <style>
-/* Chat — user bubble */
-[data-testid="stChatMessage"]:has(
-  [data-testid="stChatMessageAvatarUser"])
-  [data-testid="stChatMessageContent"] {
-    background-color: #1B3A4B;
-    color: white;
-    border-radius: 12px;
-    padding: 12px 16px;
-}
-
-/* Chat — bot bubble */
-[data-testid="stChatMessage"]:has(
-  [data-testid="stChatMessageAvatarAssistant"])
-  [data-testid="stChatMessageContent"] {
-    background-color: white;
-    border-left: 4px solid #E8762C;
-    border-radius: 12px;
-    padding: 12px 16px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-}
-
-/* Input box */
-[data-testid="stChatInput"] textarea {
-    border-radius: 12px;
-    border: 2px solid #E8762C !important;
-    background: white;
-}
-
-/* Sidebar */
+/* Gradient sidebar */
 [data-testid="stSidebar"] {
-    background-color: #1B3A4B;
+    background: linear-gradient(180deg, #0D2137 0%, #1B3A4B 60%, #1E4D63 100%);
+    border-right: 1px solid #E8762C33;
     padding-top: 1rem;
 }
 [data-testid="stSidebar"] * { color: white !important; }
 [data-testid="stSidebar"] .stButton button {
     background: #E8762C; color: white;
     border: none; border-radius: 8px;
-    width: 100%;
+    width: 100%; margin-top: 4px;
 }
 [data-testid="collapsedControl"] {
     display: block; color: white;
 }
 
-/* Hide Streamlit chrome */
+/* App background texture */
+.stApp {
+    background: linear-gradient(135deg, #EEF2F7 0%, #E8F0F7 50%, #EDF4F0 100%);
+}
+
+/* Main content area */
+.main .block-container {
+    padding-top: 1.5rem;
+    max-width: 860px;
+}
+
+/* User chat bubble */
+[data-testid="stChatMessage"]:has(
+  [data-testid="stChatMessageAvatarUser"])
+  [data-testid="stChatMessageContent"] {
+    background: linear-gradient(135deg, #1B3A4B, #0D2137);
+    color: white;
+    border-radius: 18px 18px 4px 18px;
+    padding: 14px 18px;
+    box-shadow: 0 4px 15px rgba(27,58,75,0.25);
+}
+
+/* Bot chat bubble */
+[data-testid="stChatMessage"]:has(
+  [data-testid="stChatMessageAvatarAssistant"])
+  [data-testid="stChatMessageContent"] {
+    background: white;
+    border-left: 4px solid #E8762C;
+    border-radius: 4px 18px 18px 18px;
+    padding: 14px 18px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+}
+
+/* Input */
+[data-testid="stChatInput"] textarea {
+    border-radius: 14px;
+    border: 2px solid #1B3A4B !important;
+    background: white;
+    box-shadow: 0 2px 8px rgba(27,58,75,0.1);
+}
+[data-testid="stChatInput"] textarea:focus {
+    border-color: #E8762C !important;
+    box-shadow: 0 2px 12px rgba(232,118,44,0.2) !important;
+}
+
 footer { visibility: hidden; }
 #MainMenu { visibility: hidden; }
 </style>
@@ -111,26 +117,44 @@ if "auto_indexed_once" not in st.session_state:
 with st.sidebar:
     st.title("🎓 Margdarshak J&K")
     
-    st.subheader("🤖 AI Model")
-    available_models = rag_engine.get_available_groq_models(groq_api_key)
+    # 1. Groq API Key & Automatic Model Selection
+    st.subheader("🔑 Groq API Settings")
+    env_api_key = os.getenv("GROQ_API_KEY", "")
+    try:
+        if "GROQ_API_KEY" in st.secrets:
+            env_api_key = str(st.secrets["GROQ_API_KEY"]).strip()
+    except Exception:
+        pass
+
+    api_key_input = st.text_input(
+        "Groq API Key",
+        value=env_api_key,
+        type="password",
+        help="Get your free API key from https://console.groq.com/keys"
+    )
+    
+    # Dynamically fetch available models for this key
+    available_models = rag_engine.get_available_groq_models(api_key_input)
     default_index = 0
     if "llama3-8b-8192" in available_models:
         default_index = available_models.index("llama3-8b-8192")
 
     groq_model = st.selectbox(
-        "Model",
+        "LLM Model",
         options=available_models,
         index=default_index,
-        label_visibility="collapsed"
+        help="Models available for your Groq account. Default: llama3-8b-8192"
     )
 
     st.divider()
 
-    st.subheader("📚 Knowledge Base")
+    # 2. Knowledge Base & Document Management
+    st.subheader("📚 Knowledge Base (`/docs`)")
     uploaded_files = st.file_uploader(
         "Upload PDF Guide(s)",
         type=["pdf"],
-        accept_multiple_files=True
+        accept_multiple_files=True,
+        help="Files will be saved into the /docs directory and indexed."
     )
     
     if uploaded_files:
@@ -141,7 +165,7 @@ with st.sidebar:
         st.success(f"Saved {len(uploaded_files)} file(s) to docs/.")
 
     if st.button("🚀 Re-index All Documents"):
-        with st.spinner("Chunking PDFs & generating embeddings..."):
+        with st.spinner("Chunking PDFs & generating embeddings with all-MiniLM-L6-v2..."):
             result = rag_engine.index_documents(force_reindex=True)
             if result["status"] == "success":
                 st.success(f"Indexed {result['indexed_chunks']} chunks into ChromaDB!")
@@ -153,112 +177,119 @@ with st.sidebar:
     st.write(f"• **PDFs in `/docs`:** {len(stats['pdf_files'])}")
 
     if stats["pdf_files"]:
-        with st.expander("📄 View PDF Files"):
+        with st.expander("📄 View Files in /docs"):
             for f in stats["pdf_files"]:
                 st.caption(f"• {f}")
 
     st.divider()
 
-    st.subheader("⚙️ Settings")
-    top_k = st.slider("Top Chunks (Top-K)", min_value=1, max_value=10, value=5)
+    # 3. Retrieval Configuration
+    st.subheader("⚙️ Retrieval Settings")
+    top_k = st.slider("Top Relevant Chunks (Top-K)", min_value=1, max_value=10, value=5)
     enable_stream = st.checkbox("Stream Responses", value=True)
 
     st.divider()
 
+    # 4. Clear Chat History
     if st.button("🗑️ Clear Chat History"):
         st.session_state.messages = []
         st.rerun()
 
 
 # ==========================================
-# MAIN INTERFACE - DASHBOARD SECTIONS
+# MAIN INTERFACE - DASHBOARD SECTIONS (HTML CARDS)
 # ==========================================
 
-# 1. HERO BANNER
-st.title("🎓 Margdarshak J&K")
-st.markdown("### *Free. Cited. Offline-ready. Career guidance for every student in J&K.*")
+# 1. HERO SECTION
+st.markdown("""
+<div style="background:linear-gradient(135deg,#1B3A4B 0%,#0D2137 100%);
+     border-radius:16px; padding:32px 28px; margin-bottom:20px;
+     border-bottom:4px solid #E8762C;">
+  <div style="color:#E8762C;font-size:11px;font-weight:700;
+       letter-spacing:2px;margin-bottom:8px;">
+    SMART INDIA HACKATHON 2026 · SIH25094
+  </div>
+  <div style="color:white;font-size:24px;font-weight:700;
+       line-height:1.3;margin-bottom:10px;">
+    One-Stop Career & Education Advisor
+  </div>
+  <div style="color:#AEC6D0;font-size:14px;line-height:1.6;">
+    Free · Cited · 2G-Ready · Government data only
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
-st.divider()
 
-# 2. WHY THIS PLATFORM EXISTS
-st.subheader("💡 Why this platform exists")
-st.markdown(
-    "J&K has fewer than 200 career counselors for 2 million students. Most rural schools have none. "
-    "This platform gives every student a free, 24/7 AI advisor that answers from real government documents."
-)
+# 2. STAT CARDS ROW
+stat_col1, stat_col2, stat_col3 = st.columns(3)
 
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("Career Counselors", "< 200")
-m2.metric("Students in J&K", "2.0M+")
-m3.metric("Availability", "24/7")
-m4.metric("Cost to Students", "₹0 Free")
+with stat_col1:
+    st.markdown("""
+    <div style="background:white;border-radius:12px;padding:20px;
+         border-top:4px solid #1B3A4B;box-shadow:0 2px 12px rgba(0,0,0,0.07);">
+      <div style="font-size:28px;font-weight:800;color:#1B3A4B;">2M+</div>
+      <div style="font-size:12px;color:#666;margin-top:4px;">
+        Students in J&K with no career guidance
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-st.divider()
+with stat_col2:
+    st.markdown("""
+    <div style="background:white;border-radius:12px;padding:20px;
+         border-top:4px solid #E8762C;box-shadow:0 2px 12px rgba(0,0,0,0.07);">
+      <div style="font-size:28px;font-weight:800;color:#E8762C;">&lt;200</div>
+      <div style="font-size:12px;color:#666;margin-top:4px;">
+        Career counselors for the entire state
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-# 3. WHO IT'S FOR
-st.subheader("👥 Who it's for")
-c1, c2, c3 = st.columns(3)
-with c1:
-    st.markdown("#### 🎓 Class 12 Students")
-    st.write("Deciding stream, degree courses, entrance examinations (CUET, JEE, NEET), and college options across Jammu & Kashmir and all-India universities.")
-with c2:
-    st.markdown("#### 💰 Scholarships & Financial Aid")
-    st.write("Discovering PMSSS (Prime Minister's Special Scholarship Scheme for J&K), National Scholarship Portal (NSP), minority grants, and fee waivers.")
-with c3:
-    st.markdown("#### 🌱 First-Generation Learners")
-    st.write("Step-by-step guidance for students with no family guidance navigating admissions, paperwork, eligibility criteria, and job readiness.")
+with stat_col3:
+    st.markdown("""
+    <div style="background:white;border-radius:12px;padding:20px;
+         border-top:4px solid #27AE60;box-shadow:0 2px 12px rgba(0,0,0,0.07);">
+      <div style="font-size:28px;font-weight:800;color:#27AE60;">5 sec</div>
+      <div style="font-size:12px;color:#666;margin-top:4px;">
+        Cited answer from government documents
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-st.divider()
 
-# 4. KEY FEATURES
-st.subheader("⚡ Key Features")
-f1, f2, f3 = st.columns(3)
-with f1:
-    st.markdown("##### 📶 2G Operability")
-    st.caption("Works on slow connections and rural networks.")
-with f2:
-    st.markdown("##### 📑 Cited Answers")
-    st.caption("Every response links to verified source documents.")
-with f3:
-    st.markdown("##### 🌐 Multilingual")
-    st.caption("Supports queries in Hindi and English.")
+# 3. FEATURE CHIPS
+st.markdown("""
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:16px 0;">
+  <span style="background:#E8F4F8;color:#1B3A4B;padding:8px 16px;
+        border-radius:20px;font-size:13px;font-weight:600;
+        border:1px solid #C5DCE8;">⚡ 2G Operability</span>
+  <span style="background:#FEF3E8;color:#C4621F;padding:8px 16px;
+        border-radius:20px;font-size:13px;font-weight:600;
+        border:1px solid #F5C99A;">📄 Cited Answers</span>
+  <span style="background:#EAF7EF;color:#1E8449;padding:8px 16px;
+        border-radius:20px;font-size:13px;font-weight:600;
+        border:1px solid #A9DFBF;">🏛️ Govt. Data Only</span>
+  <span style="background:#F4ECFB;color:#6C3483;padding:8px 16px;
+        border-radius:20px;font-size:13px;font-weight:600;
+        border:1px solid #D7BDE2;">🌐 Hindi + English</span>
+  <span style="background:#FDEDEC;color:#922B21;padding:8px 16px;
+        border-radius:20px;font-size:13px;font-weight:600;
+        border:1px solid #F1948A;">💸 Zero Cost</span>
+</div>
+""", unsafe_allow_html=True)
 
-f4, f5, f6 = st.columns(3)
-with f4:
-    st.markdown("##### 💸 Zero Cost")
-    st.caption("Completely free for every student.")
-with f5:
-    st.markdown("##### 🏛️ Government Data Only")
-    st.caption("Grounded in authentic notifications — no hallucination.")
-with f6:
-    st.markdown("##### 💾 Offline Cache")
-    st.caption("Top queries and indices pre-loaded for high speed.")
-
-st.divider()
-
-# 5. HOW TO USE
-st.subheader("📋 How to use")
-r1, r2, r3 = st.columns(3)
-with r1:
-    st.info("📏 **Rule 1: Under 200 Characters**\n\nKeep queries under 200 characters for best results.")
-with r2:
-    st.success("🎯 **Rule 2: Be Specific**\n\nInclude your **marks**, **district**, and **stream** (e.g. *'Class 12 Medical, 85%, Anantnag'*).")
-with r3:
-    st.info("❓ **Rule 3: One Question at a Time**\n\nAsk one question at a time for precise answers.")
-
-st.divider()
 
 # ==========================================
 # INTERACTIVE CHAT ADVISOR
 # ==========================================
-st.subheader("💬 Ask Your Career Advisor")
+st.markdown("### 💬 Ask Your Career Advisor")
 
-if not groq_api_key:
-    st.error("⚠️ Groq API key is not configured in st.secrets['GROQ_API_KEY']. Please set it in .streamlit/secrets.toml.")
+if not api_key_input:
+    st.info("💡 Please enter your **Groq API Key** in the sidebar to start asking questions.", icon="🔑")
 
 stats = rag_engine.get_collection_stats()
 if stats["total_chunks"] == 0:
-    st.warning("⚠️ No documents are currently indexed in `/docs`. Please upload PDFs in the sidebar and click **Re-index All Documents**.")
+    st.warning("⚠️ No documents are currently indexed in `/docs`. Please upload PDFs in the sidebar and click **Re-index All Documents**.", icon="📁")
 
 # Quick suggested queries when chat is empty
 if len(st.session_state.messages) == 0:
@@ -312,16 +343,16 @@ if user_input:
 if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
     current_prompt = st.session_state.messages[-1]["content"]
 
-    if not groq_api_key:
+    if not api_key_input:
         with st.chat_message("assistant"):
-            st.error("GROQ_API_KEY is missing from st.secrets. Please configure it in .streamlit/secrets.toml.")
+            st.error("Please provide your Groq API Key in the sidebar to generate an answer.")
     else:
         with st.chat_message("assistant"):
             try:
                 if enable_stream:
                     gen_result = rag_engine.generate_answer(
                         query=current_prompt,
-                        api_key=groq_api_key,
+                        api_key=api_key_input,
                         model=groq_model,
                         top_k=top_k,
                         history=st.session_state.messages[:-1],
@@ -332,7 +363,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                     with st.spinner("Generating answer from government documents..."):
                         gen_result = rag_engine.generate_answer(
                             query=current_prompt,
-                            api_key=groq_api_key,
+                            api_key=api_key_input,
                             model=groq_model,
                             top_k=top_k,
                             history=st.session_state.messages[:-1],
