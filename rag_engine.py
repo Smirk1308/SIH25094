@@ -96,13 +96,30 @@ class RAGEngine:
             model_name=EMBEDDING_MODEL_NAME
         )
         
-        # Persistent ChromaDB client
-        self.chroma_client = chromadb.PersistentClient(path=self.chroma_dir)
-        self.collection = self.chroma_client.get_or_create_collection(
-            name=COLLECTION_NAME,
-            embedding_function=self.embedding_fn,
-            metadata={"hnsw:space": "cosine"}
-        )
+        # Persistent ChromaDB client and collection
+        self.chroma_client = None
+        self.collection = None
+        self._ensure_collection()
+
+    def _ensure_collection(self):
+        """Ensure ChromaDB client and collection handles are healthy and synchronized."""
+        try:
+            if self.chroma_client is None:
+                self.chroma_client = chromadb.PersistentClient(path=self.chroma_dir)
+            self.collection = self.chroma_client.get_or_create_collection(
+                name=COLLECTION_NAME,
+                embedding_function=self.embedding_fn,
+                metadata={"hnsw:space": "cosine"}
+            )
+            # Lightweight verification call
+            self.collection.count()
+        except Exception:
+            self.chroma_client = chromadb.PersistentClient(path=self.chroma_dir)
+            self.collection = self.chroma_client.get_or_create_collection(
+                name=COLLECTION_NAME,
+                embedding_function=self.embedding_fn,
+                metadata={"hnsw:space": "cosine"}
+            )
 
     def load_and_parse_documents(self) -> List[Dict[str, Any]]:
         """Extract text page-by-page from all PDFs and TXT files in the docs directory."""
@@ -158,16 +175,23 @@ class RAGEngine:
 
     def index_documents(self, force_reindex: bool = False) -> Dict[str, Any]:
         """Index or re-index all PDFs and TXT files from docs/ into persistent ChromaDB."""
+        self._ensure_collection()
+
         if force_reindex:
             try:
-                self.chroma_client.delete_collection(COLLECTION_NAME)
-            except Exception:
-                pass
-            self.collection = self.chroma_client.get_or_create_collection(
-                name=COLLECTION_NAME,
-                embedding_function=self.embedding_fn,
-                metadata={"hnsw:space": "cosine"}
-            )
+                # Clear all existing documents from collection without destroying the collection handle
+                existing = self.collection.get()
+                if existing and existing.get("ids") and len(existing["ids"]) > 0:
+                    del_batch = 200
+                    for i in range(0, len(existing["ids"]), del_batch):
+                        self.collection.delete(ids=existing["ids"][i:i + del_batch])
+            except Exception as e:
+                # If collection state was broken, re-initialize client and collection
+                try:
+                    self.chroma_client.delete_collection(COLLECTION_NAME)
+                except Exception:
+                    pass
+                self._ensure_collection()
         else:
             # Purge any stale chunks whose source files were deleted from /docs
             try:
@@ -179,9 +203,9 @@ class RAGEngine:
                         if src and not os.path.exists(os.path.join(self.docs_dir, src)):
                             stale_ids.append(doc_id)
                 if stale_ids:
-                    batch_del_size = 100
-                    for i in range(0, len(stale_ids), batch_del_size):
-                        self.collection.delete(ids=stale_ids[i:i + batch_del_size])
+                    del_batch = 200
+                    for i in range(0, len(stale_ids), del_batch):
+                        self.collection.delete(ids=stale_ids[i:i + del_batch])
             except Exception as e:
                 print(f"Warning cleaning stale chunks: {e}")
 
@@ -200,15 +224,27 @@ class RAGEngine:
         documents = [chunk["text"] for chunk in chunks]
         metadatas = [chunk["metadata"] for chunk in chunks]
 
-        # Use upsert to prevent duplication
+        # Use upsert in batches with error recovery for Rust/SQLite bindings
         batch_size = 100
         for i in range(0, len(ids), batch_size):
             end = min(i + batch_size, len(ids))
-            self.collection.upsert(
-                ids=ids[i:end],
-                documents=documents[i:end],
-                metadatas=metadatas[i:end]
-            )
+            batch_ids = ids[i:end]
+            batch_docs = documents[i:end]
+            batch_metas = metadatas[i:end]
+            try:
+                self.collection.upsert(
+                    ids=batch_ids,
+                    documents=batch_docs,
+                    metadatas=batch_metas
+                )
+            except Exception:
+                # Re-sync collection handle in case of Rust/SQLite binding desync
+                self._ensure_collection()
+                self.collection.upsert(
+                    ids=batch_ids,
+                    documents=batch_docs,
+                    metadatas=batch_metas
+                )
 
         total_count = self.collection.count()
         return {
@@ -222,6 +258,7 @@ class RAGEngine:
         """Automatically synchronize ChromaDB with files currently in docs/.
         Deletes chunks from removed files and indexes new or modified files.
         """
+        self._ensure_collection()
         current_files = set(
             os.path.basename(f)
             for f in glob.glob(os.path.join(self.docs_dir, "*"))
@@ -256,6 +293,7 @@ class RAGEngine:
 
     def get_collection_stats(self) -> Dict[str, Any]:
         """Get statistics about the indexed collection and documents."""
+        self._ensure_collection()
         count = self.collection.count()
         pdf_files = [os.path.basename(f) for f in glob.glob(os.path.join(self.docs_dir, "*.pdf"))]
         txt_files = [os.path.basename(f) for f in glob.glob(os.path.join(self.docs_dir, "*.txt"))]
@@ -270,6 +308,7 @@ class RAGEngine:
 
     def retrieve(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """Retrieve top-k relevant chunks from ChromaDB for a given query."""
+        self._ensure_collection()
         if self.collection.count() == 0:
             return []
 

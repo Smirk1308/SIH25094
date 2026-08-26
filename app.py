@@ -137,7 +137,10 @@ if "selected_model" not in st.session_state:
 
 # Pre-load & auto-sync documents from /docs with ChromaDB (indexes new files, purges deleted)
 if "auto_indexed_once" not in st.session_state:
-    rag_engine.sync_documents()
+    try:
+        rag_engine.sync_documents()
+    except Exception as e:
+        print(f"Warning during sync_documents: {e}")
     st.session_state.auto_indexed_once = True
 
 
