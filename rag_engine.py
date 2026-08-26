@@ -104,11 +104,12 @@ class RAGEngine:
             metadata={"hnsw:space": "cosine"}
         )
 
-    def load_and_parse_pdfs(self) -> List[Dict[str, Any]]:
-        """Extract text page-by-page from all PDFs in the docs directory."""
-        pdf_files = glob.glob(os.path.join(self.docs_dir, "*.pdf"))
+    def load_and_parse_documents(self) -> List[Dict[str, Any]]:
+        """Extract text page-by-page from all PDFs and TXT files in the docs directory."""
         extracted_chunks = []
 
+        # 1. Parse PDFs
+        pdf_files = glob.glob(os.path.join(self.docs_dir, "*.pdf"))
         for pdf_path in pdf_files:
             filename = os.path.basename(pdf_path)
             try:
@@ -129,10 +130,34 @@ class RAGEngine:
             except Exception as e:
                 print(f"Error reading PDF {filename}: {e}")
 
+        # 2. Parse Text (.txt) Files
+        txt_files = glob.glob(os.path.join(self.docs_dir, "*.txt"))
+        for txt_path in txt_files:
+            filename = os.path.basename(txt_path)
+            try:
+                with open(txt_path, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                if not content.strip():
+                    continue
+
+                txt_meta = {
+                    "source": filename,
+                    "page": 1,
+                    "file_path": txt_path
+                }
+                txt_chunks = self.chunker.chunk_text(content, txt_meta)
+                extracted_chunks.extend(txt_chunks)
+            except Exception as e:
+                print(f"Error reading TXT {filename}: {e}")
+
         return extracted_chunks
 
+    def load_and_parse_pdfs(self) -> List[Dict[str, Any]]:
+        """Backward-compatible wrapper for load_and_parse_documents."""
+        return self.load_and_parse_documents()
+
     def index_documents(self, force_reindex: bool = False) -> Dict[str, Any]:
-        """Index or re-index all PDFs from docs/ into persistent ChromaDB."""
+        """Index or re-index all PDFs and TXT files from docs/ into persistent ChromaDB."""
         if force_reindex:
             try:
                 self.chroma_client.delete_collection(COLLECTION_NAME)
@@ -143,15 +168,31 @@ class RAGEngine:
                 embedding_function=self.embedding_fn,
                 metadata={"hnsw:space": "cosine"}
             )
+        else:
+            # Purge any stale chunks whose source files were deleted from /docs
+            try:
+                existing_data = self.collection.get()
+                stale_ids = []
+                if existing_data and existing_data.get("metadatas"):
+                    for doc_id, meta in zip(existing_data["ids"], existing_data["metadatas"]):
+                        src = meta.get("source")
+                        if src and not os.path.exists(os.path.join(self.docs_dir, src)):
+                            stale_ids.append(doc_id)
+                if stale_ids:
+                    batch_del_size = 100
+                    for i in range(0, len(stale_ids), batch_del_size):
+                        self.collection.delete(ids=stale_ids[i:i + batch_del_size])
+            except Exception as e:
+                print(f"Warning cleaning stale chunks: {e}")
 
-        chunks = self.load_and_parse_pdfs()
+        chunks = self.load_and_parse_documents()
         if not chunks:
             count = self.collection.count()
             return {
                 "status": "empty",
                 "indexed_chunks": 0,
                 "total_chunks_in_db": count,
-                "message": "No PDF documents found in docs/ folder."
+                "message": "No documents found in docs/ folder."
             }
 
         # Prepare records for ChromaDB batch insertion
@@ -160,7 +201,6 @@ class RAGEngine:
         metadatas = [chunk["metadata"] for chunk in chunks]
 
         # Use upsert to prevent duplication
-        # Chroma handles batching automatically or in batches of 100
         batch_size = 100
         for i in range(0, len(ids), batch_size):
             end = min(i + batch_size, len(ids))
@@ -178,13 +218,52 @@ class RAGEngine:
             "message": f"Successfully indexed {len(chunks)} chunks into ChromaDB."
         }
 
+    def sync_documents(self, force_reindex: bool = False) -> Dict[str, Any]:
+        """Automatically synchronize ChromaDB with files currently in docs/.
+        Deletes chunks from removed files and indexes new or modified files.
+        """
+        current_files = set(
+            os.path.basename(f)
+            for f in glob.glob(os.path.join(self.docs_dir, "*"))
+            if f.endswith((".pdf", ".txt"))
+        )
+
+        try:
+            existing_data = self.collection.get()
+            existing_sources = set()
+            stale_count = 0
+            if existing_data and existing_data.get("metadatas"):
+                for meta in existing_data["metadatas"]:
+                    src = meta.get("source")
+                    if src:
+                        existing_sources.add(src)
+                        if src not in current_files:
+                            stale_count += 1
+        except Exception:
+            existing_sources = set()
+            stale_count = 0
+
+        missing_files = current_files - existing_sources
+        # If deleted files exist in ChromaDB, or any docs/ files are unindexed, re-index
+        if force_reindex or stale_count > 0 or len(missing_files) > 0 or self.collection.count() == 0:
+            return self.index_documents(force_reindex=True)
+
+        return {
+            "status": "synchronized",
+            "total_chunks_in_db": self.collection.count(),
+            "indexed_files": list(current_files)
+        }
+
     def get_collection_stats(self) -> Dict[str, Any]:
         """Get statistics about the indexed collection and documents."""
         count = self.collection.count()
         pdf_files = [os.path.basename(f) for f in glob.glob(os.path.join(self.docs_dir, "*.pdf"))]
+        txt_files = [os.path.basename(f) for f in glob.glob(os.path.join(self.docs_dir, "*.txt"))]
         return {
             "total_chunks": count,
             "pdf_files": pdf_files,
+            "txt_files": txt_files,
+            "all_files": pdf_files + txt_files,
             "docs_dir": self.docs_dir,
             "chroma_dir": self.chroma_dir
         }

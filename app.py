@@ -135,11 +135,9 @@ if "messages" not in st.session_state:
 if "selected_model" not in st.session_state:
     st.session_state.selected_model = get_best_groq_model(groq_client)
 
-# Pre-load & auto-index documents from /docs if not already in ChromaDB
+# Pre-load & auto-sync documents from /docs with ChromaDB (indexes new files, purges deleted)
 if "auto_indexed_once" not in st.session_state:
-    stats = rag_engine.get_collection_stats()
-    if stats["total_chunks"] == 0 and len(stats["pdf_files"]) > 0:
-        rag_engine.index_documents(force_reindex=False)
+    rag_engine.sync_documents()
     st.session_state.auto_indexed_once = True
 
 
