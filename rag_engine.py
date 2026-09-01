@@ -11,6 +11,9 @@ Handles:
 
 import os
 import glob
+import time
+import hashlib
+import json
 from typing import List, Dict, Any, Optional, Generator
 from pypdf import PdfReader
 import tiktoken
@@ -30,6 +33,21 @@ DEFAULT_GROQ_MODEL = "llama3-8b-8192"
 CHUNK_SIZE = 300
 CHUNK_OVERLAP = 50
 TOKENIZER_ENCODING = "cl100k_base"
+
+# Singleton cached embedding function to slash cold start latency
+_CACHED_EMBEDDING_FN = None
+
+def get_embedding_function():
+    """Cached singleton embedding function preventing model reload overhead."""
+    global _CACHED_EMBEDDING_FN
+    if _CACHED_EMBEDDING_FN is None:
+        os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+        os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
+        os.environ["TOKENIZERS_PARALLELISM"] = "false"
+        _CACHED_EMBEDDING_FN = embedding_functions.SentenceTransformerEmbeddingFunction(
+            model_name=EMBEDDING_MODEL_NAME
+        )
+    return _CACHED_EMBEDDING_FN
 
 
 class DocumentChunker:
@@ -91,10 +109,8 @@ class RAGEngine:
 
         self.chunker = DocumentChunker(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
         
-        # HuggingFace all-MiniLM-L6-v2 embedding function
-        self.embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name=EMBEDDING_MODEL_NAME
-        )
+        # Cached HuggingFace all-MiniLM-L6-v2 embedding function
+        self.embedding_fn = get_embedding_function()
         
         # Persistent ChromaDB client and collection
         self.chroma_client = None
@@ -254,42 +270,56 @@ class RAGEngine:
             "message": f"Successfully indexed {len(chunks)} chunks into ChromaDB."
         }
 
+    def _get_docs_fingerprint(self) -> str:
+        """Generate a fast timestamp/size fingerprint of all files in docs_dir."""
+        files = sorted(glob.glob(os.path.join(self.docs_dir, "*")))
+        sig_parts = []
+        for f in files:
+            if f.endswith((".pdf", ".txt")):
+                st_stat = os.stat(f)
+                sig_parts.append(f"{os.path.basename(f)}:{st_stat.st_mtime}:{st_stat.st_size}")
+        return hashlib.md5(";".join(sig_parts).encode()).hexdigest()
+
+    def _get_manifest_path(self) -> str:
+        return os.path.join(self.chroma_dir, ".sync_manifest.json")
+
     def sync_documents(self, force_reindex: bool = False) -> Dict[str, Any]:
-        """Automatically synchronize ChromaDB with files currently in docs/.
-        Deletes chunks from removed files and indexes new or modified files.
+        """Fast synchronization between /docs and ChromaDB.
+        Uses fingerprint cache to complete in <1ms when files haven't changed.
         """
         self._ensure_collection()
-        current_files = set(
-            os.path.basename(f)
-            for f in glob.glob(os.path.join(self.docs_dir, "*"))
-            if f.endswith((".pdf", ".txt"))
-        )
+        manifest_path = self._get_manifest_path()
+        current_fp = self._get_docs_fingerprint()
 
+        # Fast path: If collection already has data and manifest matches, skip heavy sync
+        if not force_reindex and os.path.exists(manifest_path) and self.collection.count() > 0:
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as mf:
+                    cached = json.load(mf)
+                if cached.get("fingerprint") == current_fp:
+                    return {
+                        "status": "cached_up_to_date",
+                        "total_chunks_in_db": self.collection.count(),
+                        "fast_sync": True
+                    }
+            except Exception:
+                pass
+
+        # If fingerprint differs or force_reindex is requested, index documents
+        res = self.index_documents(force_reindex=force_reindex)
+
+        # Save new manifest
         try:
-            existing_data = self.collection.get()
-            existing_sources = set()
-            stale_count = 0
-            if existing_data and existing_data.get("metadatas"):
-                for meta in existing_data["metadatas"]:
-                    src = meta.get("source")
-                    if src:
-                        existing_sources.add(src)
-                        if src not in current_files:
-                            stale_count += 1
+            with open(manifest_path, "w", encoding="utf-8") as mf:
+                json.dump({
+                    "fingerprint": current_fp,
+                    "total_chunks": self.collection.count(),
+                    "synced_at": time.time()
+                }, mf)
         except Exception:
-            existing_sources = set()
-            stale_count = 0
+            pass
 
-        missing_files = current_files - existing_sources
-        # If deleted files exist in ChromaDB, or any docs/ files are unindexed, re-index
-        if force_reindex or stale_count > 0 or len(missing_files) > 0 or self.collection.count() == 0:
-            return self.index_documents(force_reindex=True)
-
-        return {
-            "status": "synchronized",
-            "total_chunks_in_db": self.collection.count(),
-            "indexed_files": list(current_files)
-        }
+        return res
 
     def get_collection_stats(self) -> Dict[str, Any]:
         """Get statistics about the indexed collection and documents."""
