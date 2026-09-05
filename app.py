@@ -23,7 +23,11 @@ from offline_engine import offline_engine, get_2g_response
 from error_handler import render_error_card, ErrorDiagnostic
 
 # --- Advanced Feature Modules ---
-from college_data import search_colleges, get_seat_matrix, get_colleges_by_district, get_all_districts, get_all_college_types, get_cutoff_comparison, render_college_card, get_college_by_id
+from college_data import (
+    search_colleges, get_seat_matrix, get_colleges_by_district,
+    get_all_districts, get_all_college_types, get_cutoff_comparison,
+    render_college_card, get_college_by_id, get_colleges_map_data
+)
 from scholarship_engine import check_eligibility, get_deadline_calendar, render_eligibility_report, get_documents_checklist, render_scholarship_card, search_scholarships
 from job_intelligence import search_jobs, match_skills_to_careers, get_exam_preparation_plan, get_all_boards, get_all_skills, render_job_card, render_skill_gap_report, get_job_by_id
 from mock_interview import get_all_templates, start_interview, get_next_question, submit_answer, generate_interview_report, get_interview_progress, evaluate_answer
@@ -32,6 +36,55 @@ from student_analytics import simulate_demo_cohort, get_cohort_analytics, calcul
 
 # Load environment variables (fallback support)
 load_dotenv()
+
+# ==========================================
+# TRILINGUAL LOCALIZATION (English / हिंदी / اردو)
+# ==========================================
+TRANSLATIONS = {
+    "English": {
+        "tagline": "Your Bridge to Education & Opportunities",
+        "chat_placeholder": "Ask about college admissions, PMSSS, scholarships, cutoffs, or careers...",
+        "explore_heading": "💡 Quick Career & Scholarship Topics",
+        "btn_ask": "Ask AI Advisor",
+        "lang_badge": "🌐 English Active",
+        "system_instruction": "Answer in clear English.",
+        "prompts": [
+            ("🎓 PMSSS J&K Guide", "What are the eligibility and stipend details for PMSSS J&K Scholarship?"),
+            ("🏥 Medical Cutoffs", "What are the NEET UG cutoff marks for GMC Srinagar and GMC Jammu?"),
+            ("🏛️ NIT Srinagar", "What are the JEE Main cutoffs and branches for NIT Srinagar Home State Quota?"),
+            ("💼 JKSSB Recruitment", "What government job recruitments are conducted by JKSSB in J&K?"),
+        ]
+    },
+    "हिंदी (Hindi)": {
+        "tagline": "शिक्षा और अवसरों का आपका सेतु",
+        "chat_placeholder": "कॉलेज प्रवेश, PMSSS, छात्रवृत्ति, कटऑफ या करियर के बारे में पूछें...",
+        "explore_heading": "💡 त्वरित विषय (Quick Topics)",
+        "btn_ask": "सलाहकार से पूछें",
+        "lang_badge": "🌐 हिंदी सक्रिय",
+        "system_instruction": "कृपया उत्तर हिंदी (Hindi) में सरल और स्पष्ट भाषा में दें।",
+        "prompts": [
+            ("🎓 PMSSS छात्रवृत्ति", "PMSSS J&K छात्रवृत्ति की पात्रता और ₹1 लाख वजीफे का विवरण क्या है?"),
+            ("🏥 GMC नीट कटऑफ", "GMC श्रीनगर और GMC जम्मू के लिए NEET UG कटऑफ क्या है?"),
+            ("🏛️ NIT श्रीनगर कटऑफ", "NIT श्रीनगर होम स्टेट कोटा के लिए JEE Main कटऑफ क्या है?"),
+            ("💼 JKSSB सरकारी भर्तियां", "J&K में JKSSB द्वारा कौन-सी सरकारी भर्तियां आयोजित की जाती हैं?"),
+        ]
+    },
+    "اردو (Urdu)": {
+        "tagline": "تعلیم اور مواقع کا آپ کا پُل",
+        "chat_placeholder": "داخلہ، وظائف، پی ایم ایس ایس ایس، یا کیریئر کے بارے میں پوچھیں...",
+        "explore_heading": "💡 اہم موضوعات (Important Topics)",
+        "btn_ask": "مشیر سے پوچھیں",
+        "lang_badge": "🌐 اردو فعال",
+        "system_instruction": "براہ کرم اردو (Urdu) میں آسان اور واضح الفاظ میں جواب دیں۔",
+        "prompts": [
+            ("🎓 PMSSS وظیفہ", "PMSSS J&K اسکالرشپ کی اہلیت اور وظیفے کی تفصیلات کیا ہیں؟"),
+            ("🏥 GMC میڈیکل کٹ آف", "GMC سری نگر اور GMC جموں کے لیے NEET کے کٹ آف نمبرات کیا ہیں؟"),
+            ("🏛️ NIT سری نگر کٹ آف", "NIT سری نگر ہوم اسٹیٹ کوٹہ کے لیے JEE کٹ آف کیا ہے؟"),
+            ("💼 JKSSB اسامیاں", "جموں و کشمیر میں JKSSB کی کون سی نوکریاں دستیاب ہیں؟"),
+        ]
+    }
+}
+
 
 # Retrieve GROQ_API_KEY securely from st.secrets or environment
 def get_groq_api_key() -> str:
@@ -326,7 +379,78 @@ html, body, [class*="css"] {
 .stApp {
     background: linear-gradient(135deg, #F4F8FC 0%, #EBF5F0 50%, #EEF2FA 100%);
 }
-.main .block-container { padding-top: 1.5rem; max-width: 860px; }
+.main .block-container { padding-top: 1.25rem; max-width: 1040px; }
+
+/* Modern Tabs Navigation Bar */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 8px 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(27, 58, 140, 0.15);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    backdrop-filter: blur(10px);
+    margin-bottom: 16px;
+}
+.stTabs [data-baseweb="tab"] {
+    height: 42px;
+    white-space: nowrap;
+    font-weight: 700;
+    font-size: 13.5px;
+    border-radius: 10px;
+    padding: 0 16px;
+    color: #1B3A8C;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid transparent;
+}
+.stTabs [data-baseweb="tab"]:hover {
+    background: rgba(27, 58, 140, 0.06);
+    color: #0D2137;
+    border-color: rgba(27, 58, 140, 0.1);
+}
+.stTabs [aria-selected="true"] {
+    background: linear-gradient(135deg, #0D2137 0%, #1B3A8C 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 14px rgba(27, 58, 140, 0.3) !important;
+    border: none !important;
+}
+
+/* Visual Seat Distribution Bars */
+.seat-bar-track {
+    display: flex;
+    height: 14px;
+    border-radius: 7px;
+    overflow: hidden;
+    background: #E0E7EC;
+    margin: 8px 0 4px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+.seat-bar-om { background: #1B3A8C; }
+.seat-bar-sc { background: #E8762C; }
+.seat-bar-st { background: #8E44AD; }
+.seat-bar-rba { background: #1A6B3C; }
+
+/* Prompt suggestion chips */
+.prompt-chip {
+    display: inline-block;
+    background: white;
+    border: 1px solid rgba(27, 58, 140, 0.2);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1B3A8C;
+    margin: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+.prompt-chip:hover {
+    background: #1B3A8C;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(27, 58, 140, 0.25);
+}
 
 /* User chat bubble */
 [data-testid="stChatMessage"]:has(
@@ -360,6 +484,28 @@ html, body, [class*="css"] {
 [data-testid="stChatInput"] textarea:focus {
     border-color: #1A6B3C !important;
     box-shadow: 0 2px 12px rgba(26,107,60,0.2) !important;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .main .block-container {
+        padding: 0.8rem 0.5rem !important;
+        max-width: 100% !important;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding: 4px;
+        gap: 4px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        font-size: 11.5px;
+        padding: 0 10px;
+        height: 36px;
+    }
+    .modern-card {
+        padding: 12px !important;
+    }
 }
 
 footer { visibility: hidden; }
@@ -433,6 +579,19 @@ with st.sidebar:
     from model_router import render_model_badge
     render_model_badge()
 
+    # 0. Language Selector
+    st.subheader("🌐 Language / زبان / भाषा")
+    selected_lang = st.selectbox(
+        "Interface Language",
+        options=["English", "हिंदी (Hindi)", "اردو (Urdu)"],
+        index=0,
+        key="app_lang_select",
+        label_visibility="collapsed"
+    )
+    st.session_state.selected_language = selected_lang
+
+    st.divider()
+
     # 1. Network & Engine Mode Selector (Major 2G Selling Point)
     st.subheader("📶 Network & Engine Mode")
     network_mode = st.radio(
@@ -461,14 +620,12 @@ with st.sidebar:
 
     st.divider()
 
-    # Retrieval Configuration
-    st.subheader("⚙️ Retrieval Settings")
-    top_k = st.slider("Top Relevant Chunks (Top-K)", min_value=1, max_value=10, value=5)
-    enable_stream = st.checkbox("Stream Responses", value=True)
-
-    # Knowledge Base Stats
-    stats = rag_engine.get_collection_stats()
-    st.caption(f"📚 Knowledge Base: **{stats['total_chunks']} chunks** indexed from **{len(stats.get('all_files', []))} official documents**.")
+    # Advanced Retrieval Configuration (Grouped for Cleanliness)
+    with st.expander("⚙️ Advanced Retrieval Settings", expanded=False):
+        top_k = st.slider("Top Relevant Chunks (Top-K)", min_value=1, max_value=10, value=5)
+        enable_stream = st.checkbox("Stream Responses", value=True)
+        stats = rag_engine.get_collection_stats()
+        st.caption(f"📚 Knowledge Base: **{stats['total_chunks']} chunks** indexed from **{len(stats.get('all_files', []))} official documents**.")
 
     st.divider()
 
@@ -519,13 +676,17 @@ with st.sidebar:
 # MAIN INTERFACE - DASHBOARD HERO & METRICS
 # ==========================================
 
+# Active Language Metadata
+active_lang = st.session_state.get("selected_language", "English")
+lang_meta = TRANSLATIONS.get(active_lang, TRANSLATIONS["English"])
+
 # 1. HERO SECTION
-st.markdown("""
+st.markdown(f"""
 <div style="background:linear-gradient(135deg,#0D2137 0%,#1B3A8C 60%,#1A6B3C 100%);
-     border-radius:16px; padding:28px; margin-bottom:20px;
+     border-radius:16px; padding:24px 28px; margin-bottom:18px;
      border-bottom:4px solid #F5A623;">
   <div style="display:flex; align-items:center; gap:16px;">
-    <img src="app/static/logo.png" width="70"
+    <img src="app/static/logo.png" width="68"
          style="border-radius:8px; flex-shrink:0;">
     <div>
       <div style="color:#F5A623;font-size:10px;font-weight:700;
@@ -536,7 +697,7 @@ st.markdown("""
         J&K EduSetu
       </div>
       <div style="color:#F5A623;font-size:13px;font-weight:700;margin-top:2px;">
-        Your Bridge to Education & Opportunities
+        {lang_meta['tagline']}
       </div>
       <div style="color:#AEC6D0;font-size:12px;margin-top:3px;">
         AI Career & Education Advisory for Jammu & Kashmir · Verified Government Sources · 2G-Ready
@@ -591,659 +752,121 @@ with stat_col4:
     """, unsafe_allow_html=True)
 
 
-# 3. FEATURE CHIPS
-st.markdown("""
-<div style="display:flex;flex-wrap:wrap;gap:8px;margin:16px 0;">
+# 3. FEATURE CHIPS (WITH ACTIVE LANGUAGE)
+st.markdown(f"""
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 20px;">
   <span style="background:#E8F4F8;color:#1B3A4B;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #C5DCE8;">⚡ 2G Operability</span>
   <span style="background:#FEF3E8;color:#C4621F;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #F5C99A;">📄 Cited Answers</span>
   <span style="background:#EAF7EF;color:#1E8449;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #A9DFBF;">🏛️ Govt. Data Only</span>
-  <span style="background:#F4ECFB;color:#6C3483;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #D7BDE2;">🌐 Hindi + English</span>
+  <span style="background:#F4ECFB;color:#6C3483;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #D7BDE2;">{lang_meta['lang_badge']}</span>
   <span style="background:#FDEDEC;color:#922B21;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid #F1948A;">💸 Zero Cost</span>
 </div>
 """, unsafe_allow_html=True)
 
 
 # ==========================================
-# 4. SMART SCHOLARSHIP ELIGIBILITY ENGINE
+# 4. MULTI-VIEW TOP NAVIGATION TABS
 # ==========================================
-with st.expander("🎯 Smart Scholarship & Eligibility Checker", expanded=False):
-    st.caption("Fill your profile to discover **all matching scholarships** from 15+ government schemes:")
-    wiz_row1_c1, wiz_row1_c2, wiz_row1_c3, wiz_row1_c4 = st.columns(4)
-    
-    with wiz_row1_c1:
-        w_stream = st.selectbox(
-            "🎓 Stream",
-            ["PCM", "PCB", "Commerce", "Arts", "All"],
-            key="wiz_stream"
-        )
-    with wiz_row1_c2:
-        w_income_val = st.selectbox(
-            "💰 Annual Income",
-            ["Below ₹2.50 Lakh", "₹2.50L – ₹8.00L", "Above ₹8.00 Lakh"],
-            key="wiz_income"
-        )
-    with wiz_row1_c3:
-        w_cat = st.selectbox(
-            "🏛️ Category",
-            ["OM", "SC", "ST", "OBC", "RBA", "Minority"],
-            key="wiz_cat"
-        )
-    with wiz_row1_c4:
-        w_gender = st.selectbox(
-            "👤 Gender",
-            ["male", "female"],
-            key="wiz_gender"
-        )
-    
-    wiz_row2_c1, wiz_row2_c2, wiz_row2_c3 = st.columns(3)
-    with wiz_row2_c1:
-        w_percentage = st.number_input("📊 Class 12 %", min_value=0, max_value=100, value=75, key="wiz_pct")
-    with wiz_row2_c2:
-        w_age = st.number_input("🎂 Age", min_value=15, max_value=45, value=18, key="wiz_age")
-    with wiz_row2_c3:
-        w_disability = st.checkbox("♿ Person with Disability", key="wiz_pwd")
-    
-    # Map income selection to numeric value
-    income_map = {"Below ₹2.50 Lakh": 200000, "₹2.50L – ₹8.00L": 500000, "Above ₹8.00 Lakh": 1000000}
-    
-    profile = {
-        "stream": w_stream,
-        "income": income_map.get(w_income_val, 500000),
-        "category": w_cat,
-        "gender": w_gender,
-        "percentage": w_percentage,
-        "age": w_age,
-        "disability": w_disability,
-        "domicile": "J&K",
-    }
-    
-    matches = check_eligibility(profile)
-    
-    if matches:
-        strong = [m for m in matches if m.get("match_score", 0) >= 80]
-        likely = [m for m in matches if 50 <= m.get("match_score", 0) < 80]
-        check = [m for m in matches if m.get("match_score", 0) < 50]
-        
-        st.markdown(f"### ✅ Found **{len(matches)}** Matching Scholarships")
-        
-        if strong:
-            st.markdown("**🟢 Strong Match (>80% eligibility):**")
-            for m in strong[:5]:
-                sch = m.get("scholarship", m)
-                name = sch.get("name", m.get("name", "Unknown"))
-                benefits = sch.get("benefits", {})
-                tuition = benefits.get("tuition_support", benefits.get("tuition_cap", ""))
-                portal = sch.get("portal_url", "")
-                st.markdown(f"- 🎓 **{name}** — {tuition}")
-                if portal:
-                    st.caption(f"  🔗 [{portal}]({portal})")
-        
-        if likely:
-            st.markdown("**🟡 Likely Eligible (50-80%):**")
-            for m in likely[:3]:
-                sch = m.get("scholarship", m)
-                name = sch.get("name", m.get("name", "Unknown"))
-                st.markdown(f"- 📋 {name}")
-        
-        # Document checklist
-        sch_ids = [m.get("scholarship", m).get("id", m.get("id", "")) for m in matches[:5]]
-        docs = get_documents_checklist(sch_ids)
-        if docs:
-            with st.expander(f"📋 Documents Required ({len(docs)} items)"):
-                for doc in docs:
-                    st.markdown(f"- ✅ {doc}")
-    else:
-        st.info("No scholarships matched your profile. Try adjusting your criteria.")
-    
-    if st.button("💬 Ask AI Advisor About My Eligibility", key="btn_wiz"):
-        schemes_text = ", ".join([m.get("scholarship", m).get("name", m.get("name", "")) for m in matches[:5]]) if matches else "any available scholarships"
-        st.session_state.messages.append({
-            "role": "user",
-            "content": f"Based on my profile (Stream: {w_stream}, Income: {w_income_val}, Category: {w_cat}, Gender: {w_gender}, Class 12: {w_percentage}%, Age: {w_age}), guide me on: {schemes_text}"
-        })
-        st.rerun()
-
-
-# ==========================================
-# 5. CATEGORY-BASED QUERY EXPLORER
-# ==========================================
-if len(st.session_state.messages) == 0:
-    st.markdown("### 🔍 Explore Topics or Ask Anything")
-    
-    cat_tab1, cat_tab2, cat_tab3, cat_tab4 = st.tabs(["💰 Scholarships", "🏥 Medical & NEET", "⚙️ Engineering", "💼 Govt & Careers"])
-    selected_prompt = None
-    
-    with cat_tab1:
-        sc1, sc2 = st.columns(2)
-        with sc1:
-            if st.button("🎓 PMSSS J&K Eligibility & ₹1L Stipend", use_container_width=True, key="p_pmsss"):
-                selected_prompt = "What are the eligibility and stipend details for PMSSS J&K Scholarship?"
-            if st.button("💰 Post-Matric Scholarship (<₹2.5L Income)", use_container_width=True, key="p_post_mat"):
-                selected_prompt = "How to apply for post-matric scholarship on NSP portal with 2.5 lakh income?"
-        with sc2:
-            if st.button("🌟 Minority Merit-cum-Means Scholarship", use_container_width=True, key="p_mcm"):
-                selected_prompt = "What is the Merit-cum-Means scholarship for minority students?"
-            if st.button("🔬 INSPIRE Scholarship (₹80,000/year)", use_container_width=True, key="p_inspire"):
-                selected_prompt = "What are the eligibility criteria for INSPIRE Scholarship for science students?"
-
-    with cat_tab2:
-        mc1, mc2 = st.columns(2)
-        with mc1:
-            if st.button("🏥 GMC Srinagar & Jammu NEET Cutoffs", use_container_width=True, key="p_gmc"):
-                selected_prompt = "What are the NEET UG cutoff marks for GMC Srinagar and GMC Jammu?"
-            if st.button("🔬 SKIMS Soura & Bemina MBBS Admissions", use_container_width=True, key="p_skims"):
-                selected_prompt = "What is the admission procedure and seat intake for SKIMS MBBS?"
-        with mc2:
-            if st.button("🌿 BAMS Ayurvedic & Unani AYUSH Colleges", use_container_width=True, key="p_bams"):
-                selected_prompt = "What are the BAMS Ayurvedic and Unani college options in J&K?"
-            if st.button("🩺 Class 12 PCB Career Roadmap (Nursing/Paramedical)", use_container_width=True, key="p_pcb"):
-                selected_prompt = "What are the best career paths after Class 12 PCB besides MBBS?"
-
-    with cat_tab3:
-        ec1, ec2 = st.columns(2)
-        with ec1:
-            if st.button("🏛️ NIT Srinagar Branches & Home State Cutoffs", use_container_width=True, key="p_nit"):
-                selected_prompt = "What are the JEE Main cutoffs and branches for NIT Srinagar Home State Quota?"
-            if st.button("⚡ IUST Awantipora B.Tech Fees & Branches", use_container_width=True, key="p_iust"):
-                selected_prompt = "What are the engineering branches and fee structure at IUST Awantipora?"
-        with ec2:
-            if st.button("📐 JKCET Engineering Exam Dates & Eligibility", use_container_width=True, key="p_jkcet"):
-                selected_prompt = "What are the eligibility criteria and exam dates for JKCET engineering?"
-            if st.button("💻 Software Engineering & Tech Roadmap", use_container_width=True, key="p_swe"):
-                selected_prompt = "What is the complete roadmap and essential skills for Software Engineering?"
-
-    with cat_tab4:
-        gc1, gc2 = st.columns(2)
-        with gc1:
-            if st.button("📋 JKSSB Non-Gazetted Jobs & Exams", use_container_width=True, key="p_jkssb"):
-                selected_prompt = "What government job recruitments are conducted by JKSSB in J&K?"
-            if st.button("🏛️ JKPSC Civil Services (CCE / KAS)", use_container_width=True, key="p_jkpsc"):
-                selected_prompt = "How to prepare for JKPSC Combined Competitive Examination (KAS)?"
-        with gc2:
-            if st.button("🏦 J&K Bank Banking Associate & PO Recruitment", use_container_width=True, key="p_jkbank"):
-                selected_prompt = "What is the exam pattern and eligibility for J&K Bank recruitment?"
-            if st.button("⚖️ Arts & Commerce Career Pathways (Law CLAT/CA)", use_container_width=True, key="p_arts_com"):
-                selected_prompt = "What are the top career options in Arts and Commerce after Class 12?"
-
-    if selected_prompt:
-        st.session_state.messages.append({"role": "user", "content": selected_prompt})
-        st.rerun()
-
-
-# ==========================================
-# 6. 🏫 COLLEGE EXPLORER
-# ==========================================
-with st.expander("🏫 College Explorer — J&K Seat Matrix & Cutoffs", expanded=False):
-    st.caption("Search and compare 22+ colleges across J&K with seat matrices, cutoffs, and admission details.")
-    
-    ce_col1, ce_col2, ce_col3 = st.columns(3)
-    with ce_col1:
-        ce_district = st.selectbox("📍 District", ["All"] + get_all_districts(), key="ce_district")
-    with ce_col2:
-        ce_type = st.selectbox("🎓 College Type", ["All"] + get_all_college_types(), key="ce_type")
-    with ce_col3:
-        ce_search = st.text_input("🔍 Search", placeholder="e.g., NIT, GMC, IUST...", key="ce_search")
-    
-    # Apply filters
-    filter_district = None if ce_district == "All" else ce_district
-    filter_type = None if ce_type == "All" else ce_type
-    
-    if ce_search:
-        colleges_found = search_colleges(ce_search, district=filter_district, college_type=filter_type)
-    elif filter_district or filter_type:
-        colleges_found = search_colleges("", district=filter_district, college_type=filter_type)
-    else:
-        colleges_found = search_colleges("")  # Show all
-    
-    if colleges_found:
-        st.markdown(f"**Found {len(colleges_found)} colleges:**")
-        for college in colleges_found[:10]:
-            card_md = render_college_card(college)
-            st.markdown(card_md)
-            
-            # Seat matrix expander
-            seat_data = get_seat_matrix(college["id"])
-            if seat_data and seat_data.get("branches"):
-                with st.expander(f"📊 Seat Matrix — {college['name']}", expanded=False):
-                    for branch in seat_data["branches"]:
-                        st.caption(
-                            f"**{branch['name']}**: Total {branch.get('total_seats', 'N/A')} seats | "
-                            f"OM: {branch.get('seats_om', '-')} | SC: {branch.get('seats_sc', '-')} | "
-                            f"ST: {branch.get('seats_st', '-')} | RBA: {branch.get('seats_rba', '-')}"
-                        )
-            st.markdown("---")
-    else:
-        st.info("No colleges match your filters. Try a different search.")
-    
-    # Compare colleges
-    all_colleges = search_colleges("")
-    college_names = {c["id"]: c["name"] for c in all_colleges}
-    compare_ids = st.multiselect(
-        "📊 Compare Colleges (select 2-4)",
-        options=list(college_names.keys()),
-        format_func=lambda x: college_names.get(x, x),
-        max_selections=4,
-        key="ce_compare"
-    )
-    if len(compare_ids) >= 2:
-        comparison = get_cutoff_comparison(compare_ids)
-        if comparison:
-            st.markdown("### Cutoff Comparison")
-            for item in comparison:
-                st.markdown(f"**{item.get('college_name', item.get('id', ''))}**")
-                for b in item.get("branches", [])[:5]:
-                    st.caption(f"  {b['name']}: {b.get('cutoff_info', 'N/A')}")
-
-
-# ==========================================
-# 7. 💼 JOB EXPLORER & SKILL GAP ANALYZER
-# ==========================================
-with st.expander("💼 Job Explorer & Skill Gap Analyzer", expanded=False):
-    job_tab1, job_tab2 = st.tabs(["🔍 Browse Jobs", "🎯 Skill Gap Analyzer"])
-    
-    with job_tab1:
-        st.caption("Explore 30+ career opportunities across J&K government, banking, central services, and private sector.")
-        jb_col1, jb_col2 = st.columns(2)
-        with jb_col1:
-            jb_board = st.selectbox("🏛️ Board / Sector", ["All"] + get_all_boards(), key="jb_board")
-        with jb_col2:
-            jb_search = st.text_input("🔍 Search Jobs", placeholder="e.g., Junior Assistant, KAS, Police...", key="jb_search")
-        
-        filter_board = None if jb_board == "All" else jb_board
-        jobs_found = search_jobs(jb_search if jb_search else "", board=filter_board)
-        
-        if jobs_found:
-            st.markdown(f"**Found {len(jobs_found)} job profiles:**")
-            for job in jobs_found[:8]:
-                card_md = render_job_card(job)
-                st.markdown(card_md)
-                
-                # Exam prep plan button
-                if st.button(f"📝 Exam Prep Plan: {job['title']}", key=f"prep_{job['id']}"):
-                    plan = get_exam_preparation_plan(job["id"])
-                    if plan:
-                        st.markdown(f"**📚 Preparation Plan for {job['title']}:**")
-                        for subject in plan.get("subjects", []):
-                            if isinstance(subject, dict):
-                                st.caption(f"• {subject.get('name', subject)}: {subject.get('hours_per_week', '')} hrs/week")
-                            else:
-                                st.caption(f"• {subject}")
-                        if plan.get("timeline"):
-                            st.caption(f"⏱️ Recommended duration: {plan.get('timeline', 'N/A')}")
-                        if plan.get("resources"):
-                            st.caption(f"📖 Resources: {', '.join(plan['resources'][:5]) if isinstance(plan['resources'], list) else plan['resources']}")
-                st.markdown("---")
-        else:
-            st.info("No jobs match your search. Try different keywords.")
-    
-    with job_tab2:
-        st.caption("Select your current skills to discover matching career paths and identify gaps.")
-        available_skills = get_all_skills()
-        selected_skills = st.multiselect(
-            "🛠️ Your Current Skills",
-            options=available_skills,
-            default=[],
-            key="skill_select"
-        )
-        
-        if selected_skills:
-            career_matches = match_skills_to_careers(selected_skills)
-            if career_matches:
-                report_md = render_skill_gap_report(career_matches)
-                st.markdown(report_md)
-                
-                if st.button("💬 Ask AI for Personalized Career Roadmap", key="btn_skill_ai"):
-                    skills_text = ", ".join(selected_skills)
-                    top_careers = ", ".join([c.get("title", c.get("job_title", "")) for c in career_matches[:3]])
-                    st.session_state.messages.append({
-                        "role": "user",
-                        "content": f"I have these skills: {skills_text}. My top matching careers are: {top_careers}. Give me a detailed roadmap to achieve my best career match."
-                    })
-                    st.rerun()
-            else:
-                st.info("No career matches found for your skill combination.")
-        else:
-            st.info("Select your skills above to see matching career paths.")
-
-
-# ==========================================
-# 8. 🎤 AI MOCK INTERVIEW SIMULATOR
-# ==========================================
-with st.expander("🎤 AI Mock Interview Simulator", expanded=False):
-    st.caption("Practice for J&K government exams, placements, and professional interviews with AI-powered scoring.")
-    
-    # Initialize interview session state
-    if "interview_session" not in st.session_state:
-        st.session_state.interview_session = None
-    
-    templates = get_all_templates()
-    
-    if st.session_state.interview_session is None:
-        # Interview selection screen
-        template_id = st.selectbox(
-            "🎯 Select Interview Type",
-            options=list(templates.keys()),
-            format_func=lambda x: f"{templates[x].get('title', x)}",
-            key="iv_template"
-        )
-        
-        if template_id and templates.get(template_id):
-            tmpl = templates[template_id]
-            st.markdown(f"**{tmpl.get('title', template_id)}** — {tmpl.get('description', '')}")
-            st.caption(f"📋 {len(tmpl.get('rounds', []))} rounds · {tmpl.get('questions_per_round', 3)} questions each · Difficulty: {tmpl.get('difficulty', 'moderate')}")
-        
-        if st.button("▶️ Start Mock Interview", key="btn_start_iv"):
-            session = start_interview(template_id)
-            st.session_state.interview_session = session
-            first_q = get_next_question(session)
-            if first_q:
-                st.session_state.current_iv_question = first_q
-            st.rerun()
-    else:
-        # Active interview
-        session = st.session_state.interview_session
-        
-        if session.get("status") == "completed":
-            # Show report
-            st.markdown("### 🏆 Interview Complete!")
-            report = generate_interview_report(session)
-            st.markdown(report)
-            if st.button("🔄 Start New Interview", key="btn_new_iv"):
-                st.session_state.interview_session = None
-                if "current_iv_question" in st.session_state:
-                    del st.session_state["current_iv_question"]
-                st.rerun()
-        else:
-            # Show current question
-            progress = get_interview_progress(session)
-            st.progress(
-                progress.get("completed_questions", 0) / max(progress.get("total_questions", 1), 1),
-                text=f"Round: {progress.get('current_round_name', 'N/A')} | Q{progress.get('completed_questions', 0)+1}/{progress.get('total_questions', '?')}"
-            )
-            
-            current_q = st.session_state.get("current_iv_question")
-            if current_q:
-                st.markdown(f"**Round {current_q.get('round_number', 0)+1}: {current_q.get('round_name', '')}**")
-                st.markdown(f"❓ {current_q.get('question', 'Loading...')}")
-                
-                answer = st.text_area("Your Answer:", key=f"iv_ans_{progress.get('completed_questions', 0)}", height=120)
-                
-                if st.button("📤 Submit Answer", key="btn_submit_iv"):
-                    if answer.strip():
-                        updated_session = submit_answer(session, answer.strip())
-                        st.session_state.interview_session = updated_session
-                        
-                        # Show score for last answer
-                        if updated_session.get("responses"):
-                            last = updated_session["responses"][-1]
-                            score = last.get("total_score", last.get("score_breakdown", {}).get("total_score", "N/A"))
-                            feedback = last.get("feedback", "")
-                            st.success(f"Score: {score}/100 — {feedback[:200]}")
-                        
-                        # Get next question
-                        next_q = get_next_question(updated_session)
-                        if next_q:
-                            st.session_state.current_iv_question = next_q
-                        else:
-                            updated_session["status"] = "completed"
-                            st.session_state.interview_session = updated_session
-                        st.rerun()
-                    else:
-                        st.warning("Please enter your answer before submitting.")
-            
-            if st.button("⏹️ End Interview Early", key="btn_end_iv"):
-                session["status"] = "completed"
-                st.session_state.interview_session = session
-                st.rerun()
-
-
-# ==========================================
-# 9. 📄 RESUME ANALYZER
-# ==========================================
-with st.expander("📄 Resume Analyzer", expanded=False):
-    st.caption("Upload your resume (PDF) for automated section extraction, scoring, and improvement suggestions.")
-    
-    uploaded_resume = st.file_uploader("📎 Upload Resume (PDF)", type=["pdf"], key="resume_upload")
-    target_role = st.selectbox(
-        "🎯 Target Role (optional)",
-        ["None"] + get_available_target_roles(),
-        key="resume_role"
-    )
-    target_role_val = None if target_role == "None" else target_role
-    
-    if uploaded_resume:
-        try:
-            resume_text = extract_text_from_pdf(uploaded_resume)
-            if resume_text and len(resume_text.strip()) > 20:
-                analysis = analyze_resume(resume_text, target_role=target_role_val)
-                report = render_resume_report(analysis)
-                st.markdown(report)
-                
-                # AI Review button
-                if st.button("🤖 Get AI-Powered Review", key="btn_ai_resume"):
-                    with st.spinner("AI is reviewing your resume..."):
-                        try:
-                            ai_review = get_ai_review(resume_text, target_role=target_role_val)
-                            st.markdown("### 🤖 AI Review")
-                            st.markdown(ai_review)
-                        except Exception as e:
-                            st.warning(f"AI review unavailable: {str(e)[:100]}. See the automated analysis above.")
-                
-                # Job comparison
-                if target_role_val:
-                    job_results = search_jobs(target_role_val)
-                    if job_results:
-                        comparison = compare_to_job_requirements(
-                            analysis.get("sections", {}),
-                            job_results[0]
-                        )
-                        if comparison:
-                            st.markdown("### 📊 Job Fit Analysis")
-                            st.markdown(f"**Match: {comparison.get('match_percentage', 0)}%**")
-                            if comparison.get("skill_overlap"):
-                                st.markdown(f"✅ Matching skills: {', '.join(comparison['skill_overlap'][:8])}")
-                            if comparison.get("missing_skills"):
-                                st.markdown(f"❌ Missing skills: {', '.join(comparison['missing_skills'][:8])}")
-                            st.markdown(f"💡 {comparison.get('recommendation', '')}")
-            else:
-                st.warning("Could not extract sufficient text from PDF. Please ensure the PDF contains readable text.")
-        except Exception as e:
-            st.error(f"Error processing resume: {str(e)[:200]}")
-
-
-# ==========================================
-# 10. 📊 ADMIN PORTAL — PREDICTIVE ANALYTICS
-# ==========================================
+tab_titles = [
+    "💬 AI Advisor",
+    "🏫 Colleges & Seats",
+    "🎯 Scholarships",
+    "💼 Careers & Jobs",
+    "🎤 Mock Interview",
+    "📄 Resume Studio"
+]
 if st.session_state.get("admin_mode", False):
-    st.markdown("---")
-    st.markdown("## 📊 Institutional Admin Portal — Dropout Risk Analytics")
-    st.caption("🔒 Authenticated access | Predictive student analytics powered by J&K EduSetu")
-    
-    # Generate demo cohort
-    if "admin_cohort" not in st.session_state:
-        st.session_state.admin_cohort = simulate_demo_cohort(50)
-    
-    cohort = st.session_state.admin_cohort
-    analytics = get_cohort_analytics(cohort)
-    
-    # Overview cards
-    admin_c1, admin_c2, admin_c3, admin_c4 = st.columns(4)
-    with admin_c1:
-        st.metric("👥 Total Students", analytics["total_students"])
-    with admin_c2:
-        at_risk = analytics["risk_distribution"].get("High", 0) + analytics["risk_distribution"].get("Critical", 0)
-        st.metric("⚠️ At-Risk Students", at_risk, delta=f"-{at_risk}" if at_risk > 0 else "0", delta_color="inverse")
-    with admin_c3:
-        st.metric("📊 Avg CGPA", f"{analytics['avg_cgpa']:.2f}")
-    with admin_c4:
-        st.metric("🎓 Scholarship Rate", f"{analytics.get('scholarship_rate', 0):.0f}%")
-    
-    # Risk distribution
-    st.markdown("### Risk Distribution")
-    risk_dist = analytics["risk_distribution"]
-    dist_cols = st.columns(4)
-    colors = {"Low": "🟢", "Medium": "🟡", "High": "🟠", "Critical": "🔴"}
-    for i, (cat, count) in enumerate(risk_dist.items()):
-        with dist_cols[i]:
-            st.markdown(f"{colors.get(cat, '')} **{cat}**: {count} students")
-    
-    # Bar chart
-    st.bar_chart(risk_dist)
-    
-    # Priority alerts
-    alerts = get_priority_alerts(cohort)
-    if alerts:
-        st.markdown(f"### 🚨 Priority Alerts ({len(alerts)} students)")
-        for alert in alerts[:10]:
-            student = alert.get("student", alert)
-            risk = alert.get("risk_result", {})
-            name = student.get("name", "Unknown")
-            program = student.get("program", "")
-            risk_score = risk.get("total_score", 0)
-            risk_cat = risk.get("risk_category", "Unknown")
-            risk_color = risk.get("risk_color", "⚪")
-            
-            with st.expander(f"{risk_color} {name} — {program} | Risk: {risk_score:.0f}/100 ({risk_cat})"):
-                st.markdown(get_student_summary(student))
-                interventions = alert.get("interventions", generate_intervention_plan(student, risk))
-                if interventions:
-                    st.markdown("**📋 Intervention Plan:**")
-                    for iv in interventions[:5]:
-                        if isinstance(iv, dict):
-                            st.caption(f"{iv.get('icon', '•')} [{iv.get('priority', '')}] {iv.get('action', str(iv))} — {iv.get('responsible', '')} ({iv.get('timeline', '')})")
-                        else:
-                            st.caption(f"• {iv}")
-    
-    # Student search
-    st.markdown("### 🔍 Search Students")
-    student_search = st.text_input("Search by name, ID, district, or program...", key="admin_search")
-    if student_search:
-        found = search_students(cohort, student_search)
-        st.markdown(f"Found {len(found)} students:")
-        for s in found[:10]:
-            risk_r = calculate_risk_score(s)
-            st.caption(f"{risk_r.get('risk_color', '⚪')} **{s['name']}** | {s['program']} | {s['institution']} | CGPA: {s['cgpa']} | Risk: {risk_r['total_score']:.0f}")
-    
-    # Export report
-    if st.button("📥 Export Full Cohort Report", key="btn_export_cohort"):
-        report_text = export_cohort_report(analytics)
-        st.markdown(report_text)
-    
+    tab_titles.append("📊 Admin Portal")
+
+tabs = st.tabs(tab_titles)
+
+
+# =========================================================================
+# TAB 1: 💬 AI ADVISOR & CONVERSATION
+# =========================================================================
+with tabs[0]:
+    # Persistent Quick Topics & Prompt Chips
+    st.markdown(f"##### {lang_meta['explore_heading']}")
+    qc1, qc2 = st.columns(2)
+    for idx, (p_title, p_query) in enumerate(lang_meta["prompts"]):
+        col = qc1 if idx % 2 == 0 else qc2
+        with col:
+            if st.button(p_title, use_container_width=True, key=f"quick_p_{idx}_{active_lang}"):
+                st.session_state.messages.append({"role": "user", "content": p_query})
+                st.rerun()
+
     st.markdown("---")
 
+    # Conversation History Display
+    st.markdown("### 💬 Advisor Conversation")
 
-# ==========================================
-# 11. INTERACTIVE CHAT HISTORY DISPLAY
-# ==========================================
-st.markdown("### 💬 Advisor Conversation")
-
-for msg in st.session_state.messages:
-    if msg["role"] == "user":
-        with st.chat_message("user"):
-            st.markdown(msg["content"])
-    else:
-        with st.chat_message("assistant"):
-            st.markdown(msg["content"])
-            
-            # Display portal button if available
-            if msg.get("portal_url"):
-                st.markdown(
-                    f'<a class="portal-action-btn" href="{msg["portal_url"]}" target="_blank">'
-                    f'🔗 Open Official Portal'
-                    f'</a>',
-                    unsafe_allow_html=True
-                )
-
-            if "sources" in msg and msg["sources"]:
-                model_label = f" (Engine: {msg.get('model_used', 'AI')})" if msg.get('model_used') else ""
-                with st.expander(f"📚 View {len(msg['sources'])} Cited Source Chunks from Govt. Archives{model_label}"):
-                    for i, src in enumerate(msg["sources"], 1):
-                        st.caption(f"**Source {i}: {src.get('source', 'Document')} (Page {src.get('page', '?')})** • Similarity: {src.get('similarity', 0.0):.2f}")
-                        if src.get("text"):
-                            st.markdown(f"> {src.get('text', '')}")
-
-# Chat Input Handler
-user_input = st.chat_input("Ask about college admissions, PMSSS, scholarships, cutoffs, or careers...")
-
-if user_input:
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    st.rerun()
-
-# If the last message is from the user, generate response
-if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
-    current_prompt = st.session_state.messages[-1]["content"]
-
-    # =========================================================================
-    # 1. 2G ULTRA-LITE MODE (Zero external API, Sub-10ms Instant Delivery)
-    # =========================================================================
-    if network_mode == "⚡ 2G Ultra-Lite (Offline)":
-        with st.chat_message("assistant"):
-            offline_match = get_2g_response(current_prompt)
-            if offline_match:
-                full_response = offline_match["answer"]
-                st.markdown(full_response)
-                portal_url = offline_match.get("portal_url", "")
-                if portal_url:
-                    st.markdown(
-                        f'<a class="portal-action-btn" href="{portal_url}" target="_blank">🔗 Open Official Portal</a>',
-                        unsafe_allow_html=True
-                    )
-                retrieved_sources = offline_match.get("sources", [])
-                model_used = f"⚡ 2G Offline Engine ({offline_match['latency_ms']}ms latency)"
-            else:
-                # Fallback to local ChromaDB direct snippet extraction (no cloud LLM)
-                retrieved_chunks = rag_engine.retrieve(current_prompt, top_k=3)
-                if retrieved_chunks:
-                    full_response = "Here are the verified records retrieved directly from the offline government archive:\n\n"
-                    for idx, chunk in enumerate(retrieved_chunks, 1):
-                        full_response += f"**{idx}. [{chunk['source']} - Page {chunk['page']}]:**\n{chunk['text']}\n\n"
-                    st.markdown(full_response)
-                    retrieved_sources = retrieved_chunks
-                    model_used = "⚡ 2G Local ChromaDB Vector Search (0 API calls)"
-                    portal_url = ""
-                else:
-                    full_response = "No matching records found in local offline storage for this query. Please try searching for scholarships, colleges, or career paths."
-                    st.markdown(full_response)
-                    retrieved_sources = []
-                    model_used = "⚡ 2G Offline Engine"
-                    portal_url = ""
-
-            if retrieved_sources:
-                with st.expander(f"📚 View {len(retrieved_sources)} Cited Source Chunks (Engine: {model_used})"):
-                    for i, src in enumerate(retrieved_sources, 1):
-                        st.caption(f"**Source {i}: {src.get('source', 'Document')} (Page {src.get('page', '?')})** • Similarity: {src.get('similarity', 0.0):.2f}")
-                        if src.get("text"):
-                            st.markdown(f"> {src.get('text', '')}")
-
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": full_response,
-                "sources": retrieved_sources,
-                "model_used": model_used,
-                "portal_url": portal_url,
-                "search_query": current_prompt
-            })
-
-    # =========================================================================
-    # 2. SMART AUTO-DETECT & AI CLOUD (Adaptive Hybrid Execution)
-    # =========================================================================
-    else:
-        # Check 2G Cache first if in Smart Auto-Detect
-        offline_match = get_2g_response(current_prompt) if network_mode == "🤖 Smart Auto-Detect" else None
-
-        if offline_match and offline_match.get("confidence_score", 0) >= 3.5:
-            # Instant delivery for high confidence pre-fed matches
+    for msg in st.session_state.messages:
+        if msg["role"] == "user":
+            with st.chat_message("user"):
+                st.markdown(msg["content"])
+        else:
             with st.chat_message("assistant"):
-                full_response = offline_match["answer"]
-                st.markdown(full_response)
-                portal_url = offline_match.get("portal_url", "")
-                if portal_url:
+                st.markdown(msg["content"])
+                
+                # Display portal button if available
+                if msg.get("portal_url"):
                     st.markdown(
-                        f'<a class="portal-action-btn" href="{portal_url}" target="_blank">🔗 Open Official Portal</a>',
+                        f'<a class="portal-action-btn" href="{msg["portal_url"]}" target="_blank">'
+                        f'🔗 Open Official Portal'
+                        f'</a>',
                         unsafe_allow_html=True
                     )
-                retrieved_sources = offline_match.get("sources", [])
-                model_used = f"⚡ Instant 2G Cache ({offline_match['latency_ms']}ms)"
+
+                if "sources" in msg and msg["sources"]:
+                    model_label = f" (Engine: {msg.get('model_used', 'AI')})" if msg.get('model_used') else ""
+                    with st.expander(f"📚 View {len(msg['sources'])} Cited Source Chunks from Govt. Archives{model_label}"):
+                        for i, src in enumerate(msg["sources"], 1):
+                            st.caption(f"**Source {i}: {src.get('source', 'Document')} (Page {src.get('page', '?')})** • Similarity: {src.get('similarity', 0.0):.2f}")
+                            if src.get("text"):
+                                st.markdown(f"> {src.get('text', '')}")
+
+    # Chat Input Handler
+    user_input = st.chat_input(lang_meta["chat_placeholder"])
+
+    if user_input:
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        st.rerun()
+
+    # Query Execution Handler
+    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+        current_prompt = st.session_state.messages[-1]["content"]
+
+        # 1. 2G ULTRA-LITE MODE (Zero external API, Sub-10ms Instant Delivery)
+        if network_mode == "⚡ 2G Ultra-Lite (Offline)":
+            with st.chat_message("assistant"):
+                offline_match = get_2g_response(current_prompt)
+                if offline_match:
+                    full_response = offline_match["answer"]
+                    st.markdown(full_response)
+                    portal_url = offline_match.get("portal_url", "")
+                    if portal_url:
+                        st.markdown(
+                            f'<a class="portal-action-btn" href="{portal_url}" target="_blank">🔗 Open Official Portal</a>',
+                            unsafe_allow_html=True
+                        )
+                    retrieved_sources = offline_match.get("sources", [])
+                    model_used = f"⚡ 2G Offline Engine ({offline_match['latency_ms']}ms latency)"
+                else:
+                    retrieved_chunks = rag_engine.retrieve(current_prompt, top_k=3)
+                    if retrieved_chunks:
+                        full_response = "Here are the verified records retrieved directly from the offline government archive:\n\n"
+                        for idx, chunk in enumerate(retrieved_chunks, 1):
+                            full_response += f"**{idx}. [{chunk['source']} - Page {chunk['page']}]:**\n{chunk['text']}\n\n"
+                        st.markdown(full_response)
+                        retrieved_sources = retrieved_chunks
+                        model_used = "⚡ 2G Local ChromaDB Vector Search (0 API calls)"
+                        portal_url = ""
+                    else:
+                        full_response = "No matching records found in local offline storage for this query. Please try searching for scholarships, colleges, or career paths."
+                        st.markdown(full_response)
+                        retrieved_sources = []
+                        model_used = "⚡ 2G Offline Engine"
+                        portal_url = ""
 
                 if retrieved_sources:
                     with st.expander(f"📚 View {len(retrieved_sources)} Cited Source Chunks (Engine: {model_used})"):
@@ -1261,11 +884,12 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                     "search_query": current_prompt
                 })
 
-        elif not google_api_key and not groq_api_key:
-            # Zero-downtime Fallback: Serve offline match or local Chroma chunks when API keys are missing
-            with st.chat_message("assistant"):
-                render_error_card(Exception("AuthenticationError: 401 Missing GOOGLE_API_KEY / GROQ_API_KEY in st.secrets"))
-                if offline_match:
+        # 2. SMART AUTO-DETECT & AI CLOUD (Adaptive Hybrid Execution)
+        else:
+            offline_match = get_2g_response(current_prompt) if network_mode == "🤖 Smart Auto-Detect" else None
+
+            if offline_match and offline_match.get("confidence_score", 0) >= 3.5:
+                with st.chat_message("assistant"):
                     full_response = offline_match["answer"]
                     st.markdown(full_response)
                     portal_url = offline_match.get("portal_url", "")
@@ -1275,67 +899,10 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                             unsafe_allow_html=True
                         )
                     retrieved_sources = offline_match.get("sources", [])
-                    model_used = "⚡ 2G Offline Fallback"
-                else:
-                    retrieved_chunks = rag_engine.retrieve(current_prompt, top_k=top_k)
-                    if retrieved_chunks:
-                        full_response = "Here are the relevant provisions from official documents:\n\n"
-                        for idx, chunk in enumerate(retrieved_chunks, 1):
-                            full_response += f"**{idx}. [{chunk['source']} - Page {chunk['page']}]:**\n{chunk['text']}\n\n"
-                        st.markdown(full_response)
-                        retrieved_sources = retrieved_chunks
-                        model_used = "⚡ 2G Local ChromaDB Fallback"
-                        portal_url = ""
-                    else:
-                        full_response = "Please configure your `GOOGLE_API_KEY` (or `GROQ_API_KEY`) in Streamlit Secrets or switch to ⚡ 2G Ultra-Lite mode."
-                        st.markdown(full_response)
-                        retrieved_sources = []
-                        model_used = "Offline System"
-                        portal_url = ""
-
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": full_response,
-                    "sources": retrieved_sources,
-                    "model_used": model_used,
-                    "portal_url": portal_url,
-                    "search_query": current_prompt
-                })
-
-        else:
-            # Full Groq RAG generation with graceful error recovery
-            with st.chat_message("assistant"):
-                try:
-                    if enable_stream:
-                        gen_result = rag_engine.generate_answer(
-                            query=current_prompt,
-                            api_key=groq_api_key,
-                            model=st.session_state.selected_model,
-                            top_k=top_k,
-                            history=st.session_state.messages[:-1],
-                            stream=True
-                        )
-                        full_response = st.write_stream(gen_result["stream"])
-                    else:
-                        with st.spinner("Generating answer from government documents..."):
-                            gen_result = rag_engine.generate_answer(
-                                query=current_prompt,
-                                api_key=groq_api_key,
-                                model=st.session_state.selected_model,
-                                top_k=top_k,
-                                history=st.session_state.messages[:-1],
-                                stream=False
-                            )
-                            full_response = gen_result["answer"]
-                            st.markdown(full_response)
-
-                    model_used = gen_result.get("model_used", st.session_state.selected_model)
-                    retrieved_sources = gen_result.get("sources", [])
-                    search_query = gen_result.get("search_query", current_prompt)
+                    model_used = f"⚡ Instant 2G Cache ({offline_match['latency_ms']}ms)"
 
                     if retrieved_sources:
-                        query_note = f" | Search: '{search_query}'" if search_query != current_prompt else ""
-                        with st.expander(f"📚 View {len(retrieved_sources)} Cited Source Chunks from ChromaDB (Model: {model_used}{query_note})"):
+                        with st.expander(f"📚 View {len(retrieved_sources)} Cited Source Chunks (Engine: {model_used})"):
                             for i, src in enumerate(retrieved_sources, 1):
                                 st.caption(f"**Source {i}: {src.get('source', 'Document')} (Page {src.get('page', '?')})** • Similarity: {src.get('similarity', 0.0):.2f}")
                                 if src.get("text"):
@@ -1346,13 +913,13 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                         "content": full_response,
                         "sources": retrieved_sources,
                         "model_used": model_used,
-                        "portal_url": "",
-                        "search_query": search_query
+                        "portal_url": portal_url,
+                        "search_query": current_prompt
                     })
 
-                except Exception as e:
-                    # Smart Fallback with personalized error diagnostic card
-                    render_error_card(e)
+            elif not google_api_key and not groq_api_key:
+                with st.chat_message("assistant"):
+                    render_error_card(Exception("AuthenticationError: 401 Missing GOOGLE_API_KEY / GROQ_API_KEY in st.secrets"))
                     if offline_match:
                         full_response = offline_match["answer"]
                         st.markdown(full_response)
@@ -1363,20 +930,593 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                                 unsafe_allow_html=True
                             )
                         retrieved_sources = offline_match.get("sources", [])
+                        model_used = "⚡ 2G Offline Fallback"
                     else:
-                        retrieved_chunks = rag_engine.retrieve(current_prompt, top_k=3)
-                        full_response = "Here are the verified provisions from the local government archives:\n\n"
-                        for idx, chunk in enumerate(retrieved_chunks, 1):
-                            full_response += f"**{idx}. [{chunk['source']} - Page {chunk['page']}]:**\n{chunk['text']}\n\n"
-                        st.markdown(full_response)
-                        retrieved_sources = retrieved_chunks
-                        portal_url = ""
+                        retrieved_chunks = rag_engine.retrieve(current_prompt, top_k=top_k)
+                        if retrieved_chunks:
+                            full_response = "Here are the relevant provisions from official documents:\n\n"
+                            for idx, chunk in enumerate(retrieved_chunks, 1):
+                                full_response += f"**{idx}. [{chunk['source']} - Page {chunk['page']}]:**\n{chunk['text']}\n\n"
+                            st.markdown(full_response)
+                            retrieved_sources = retrieved_chunks
+                            model_used = "⚡ 2G Local ChromaDB Fallback"
+                            portal_url = ""
+                        else:
+                            full_response = "Please configure your `GOOGLE_API_KEY` (or `GROQ_API_KEY`) in Streamlit Secrets or switch to ⚡ 2G Ultra-Lite mode."
+                            st.markdown(full_response)
+                            retrieved_sources = []
+                            model_used = "Offline System"
+                            portal_url = ""
 
                     st.session_state.messages.append({
                         "role": "assistant",
                         "content": full_response,
                         "sources": retrieved_sources,
-                        "model_used": "⚡ 2G Offline Fallback",
+                        "model_used": model_used,
                         "portal_url": portal_url,
                         "search_query": current_prompt
                     })
+
+            else:
+                with st.chat_message("assistant"):
+                    try:
+                        # Append language guidance if not English
+                        cloud_query = current_prompt
+                        if active_lang != "English":
+                            cloud_query = f"{current_prompt}\n\n[Note: {lang_meta['system_instruction']}]"
+
+                        if enable_stream:
+                            gen_result = rag_engine.generate_answer(
+                                query=cloud_query,
+                                api_key=groq_api_key,
+                                model=st.session_state.selected_model,
+                                top_k=top_k,
+                                history=st.session_state.messages[:-1],
+                                stream=True
+                            )
+                            full_response = st.write_stream(gen_result["stream"])
+                        else:
+                            with st.spinner("Generating answer from government documents..."):
+                                gen_result = rag_engine.generate_answer(
+                                    query=cloud_query,
+                                    api_key=groq_api_key,
+                                    model=st.session_state.selected_model,
+                                    top_k=top_k,
+                                    history=st.session_state.messages[:-1],
+                                    stream=False
+                                )
+                                full_response = gen_result["answer"]
+                                st.markdown(full_response)
+
+                        model_used = gen_result.get("model_used", st.session_state.selected_model)
+                        retrieved_sources = gen_result.get("sources", [])
+                        search_query = gen_result.get("search_query", current_prompt)
+
+                        if retrieved_sources:
+                            query_note = f" | Search: '{search_query}'" if search_query != current_prompt else ""
+                            with st.expander(f"📚 View {len(retrieved_sources)} Cited Source Chunks from ChromaDB (Model: {model_used}{query_note})"):
+                                for i, src in enumerate(retrieved_sources, 1):
+                                    st.caption(f"**Source {i}: {src.get('source', 'Document')} (Page {src.get('page', '?')})** • Similarity: {src.get('similarity', 0.0):.2f}")
+                                    if src.get("text"):
+                                        st.markdown(f"> {src.get('text', '')}")
+
+                        st.session_state.messages.append({
+                            "role": "assistant",
+                            "content": full_response,
+                            "sources": retrieved_sources,
+                            "model_used": model_used,
+                            "portal_url": "",
+                            "search_query": search_query
+                        })
+
+                    except Exception as e:
+                        render_error_card(e)
+                        if offline_match:
+                            full_response = offline_match["answer"]
+                            st.markdown(full_response)
+                            portal_url = offline_match.get("portal_url", "")
+                            if portal_url:
+                                st.markdown(
+                                    f'<a class="portal-action-btn" href="{portal_url}" target="_blank">🔗 Open Official Portal</a>',
+                                    unsafe_allow_html=True
+                                )
+                            retrieved_sources = offline_match.get("sources", [])
+                        else:
+                            retrieved_chunks = rag_engine.retrieve(current_prompt, top_k=3)
+                            full_response = "Here are the verified provisions from the local government archives:\n\n"
+                            for idx, chunk in enumerate(retrieved_chunks, 1):
+                                full_response += f"**{idx}. [{chunk['source']} - Page {chunk['page']}]:**\n{chunk['text']}\n\n"
+                            st.markdown(full_response)
+                            retrieved_sources = retrieved_chunks
+                            portal_url = ""
+
+                        st.session_state.messages.append({
+                            "role": "assistant",
+                            "content": full_response,
+                            "sources": retrieved_sources,
+                            "model_used": "⚡ 2G Offline Fallback",
+                            "portal_url": portal_url,
+                            "search_query": current_prompt
+                        })
+
+
+# =========================================================================
+# TAB 2: 🏫 COLLEGES & SEATS
+# =========================================================================
+with tabs[1]:
+    st.markdown("### 🏫 J&K Higher Education Directory & Seat Matrices")
+    st.caption("Explore 26 higher education institutions across Jammu & Kashmir with official seat distributions and cutoffs.")
+
+    ce_col1, ce_col2, ce_col3 = st.columns(3)
+    with ce_col1:
+        ce_district = st.selectbox("📍 District Filter", ["All"] + get_all_districts(), key="ce_district_tab")
+    with ce_col2:
+        ce_type = st.selectbox("🎓 College Type", ["All"] + get_all_college_types(), key="ce_type_tab")
+    with ce_col3:
+        ce_search = st.text_input("🔍 Search College or Branch", placeholder="e.g., NIT, GMC, IUST, CSE...", key="ce_search_tab")
+
+    filter_district = None if ce_district == "All" else ce_district
+    filter_type = None if ce_type == "All" else ce_type
+
+    colleges_found = search_colleges(ce_search if ce_search else "", district=filter_district, college_type=filter_type)
+
+    # 🗺️ Interactive J&K Map
+    map_data = get_colleges_map_data(colleges_found)
+    if map_data:
+        with st.expander("🗺️ Interactive Geographic Map of J&K Institutions", expanded=True):
+            st.map(map_data, zoom=7, use_container_width=True)
+            st.caption(f"📍 Showing {len(map_data)} institutions across Kashmir Valley & Jammu Division.")
+
+    st.markdown(f"#### Found {len(colleges_found)} Institutions")
+
+    for college in colleges_found[:12]:
+        card_md = render_college_card(college)
+        st.markdown(card_md)
+
+        # 📊 Visual Seat Distribution Bar
+        branches = college.get("branches", [])
+        if branches:
+            total_intake = sum(b.get("total_seats", 0) for b in branches)
+            om_seats = sum(b.get("seats_om", 0) for b in branches)
+            sc_seats = sum(b.get("seats_sc", 0) for b in branches)
+            st_seats = sum(b.get("seats_st", 0) for b in branches)
+            rba_seats = sum(b.get("seats_rba", 0) for b in branches)
+
+            if total_intake > 0:
+                om_pct = round((om_seats / total_intake) * 100, 1)
+                sc_pct = round((sc_seats / total_intake) * 100, 1)
+                st_pct = round((st_seats / total_intake) * 100, 1)
+                rba_pct = round((rba_seats / total_intake) * 100, 1)
+
+                st.markdown(f"""
+                <div style="background: white; border-radius: 10px; padding: 12px 16px; margin: 10px 0; border: 1px solid #DDE5EC; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+                  <div style="font-size: 11.5px; font-weight: 700; color: #1B3A8C; margin-bottom: 6px;">
+                    📊 Aggregate Reservation Distribution ({total_intake} Total Seats across {len(branches)} programs)
+                  </div>
+                  <div class="seat-bar-track">
+                    <div class="seat-bar-om" style="width: {om_pct}%;" title="Open Merit: {om_seats} seats ({om_pct}%)"></div>
+                    <div class="seat-bar-sc" style="width: {sc_pct}%;" title="Scheduled Caste: {sc_seats} seats ({sc_pct}%)"></div>
+                    <div class="seat-bar-st" style="width: {st_pct}%;" title="Scheduled Tribe: {st_seats} seats ({st_pct}%)"></div>
+                    <div class="seat-bar-rba" style="width: {rba_pct}%;" title="RBA / ALC / IB Quota: {rba_seats} seats ({rba_pct}%)"></div>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 11px; color: #444; margin-top: 6px;">
+                    <span><strong style="color:#1B3A8C;">■ Open Merit:</strong> {om_seats} ({om_pct}%)</span>
+                    <span><strong style="color:#E8762C;">■ SC:</strong> {sc_seats} ({sc_pct}%)</span>
+                    <span><strong style="color:#8E44AD;">■ ST:</strong> {st_seats} ({st_pct}%)</span>
+                    <span><strong style="color:#1A6B3C;">■ RBA/Border:</strong> {rba_seats} ({rba_pct}%)</span>
+                  </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+        # Seat matrix branch expander
+        seat_data = get_seat_matrix(college["id"])
+        if seat_data and seat_data.get("branches"):
+            with st.expander(f"📊 Detailed Branch-by-Branch Seat Matrix — {college['name']}", expanded=False):
+                for branch in seat_data["branches"]:
+                    st.caption(
+                        f"**{branch['name']}**: Total {branch.get('total_seats', 'N/A')} seats | "
+                        f"OM: {branch.get('seats_om', '-')} | SC: {branch.get('seats_sc', '-')} | "
+                        f"ST: {branch.get('seats_st', '-')} | RBA: {branch.get('seats_rba', '-')}"
+                    )
+        st.markdown("---")
+
+    # Side-by-side College Comparison Tool
+    st.markdown("### 📊 Side-by-Side College Cutoff Comparison")
+    all_colleges = search_colleges("")
+    college_names = {c["id"]: c["name"] for c in all_colleges}
+    compare_ids = st.multiselect(
+        "Select Colleges to Compare (2–4)",
+        options=list(college_names.keys()),
+        format_func=lambda x: college_names.get(x, x),
+        max_selections=4,
+        key="ce_compare_tab"
+    )
+    if len(compare_ids) >= 2:
+        comparison = get_cutoff_comparison(compare_ids)
+        if comparison:
+            st.markdown("#### Cutoff & Seats Comparison")
+            for item in comparison:
+                st.markdown(f"**{item.get('college_name', item.get('id', ''))}**")
+                for b in item.get("branches", [])[:5]:
+                    st.caption(f"  • {b['name']}: {b.get('cutoff_info', 'N/A')} ({b.get('total_seats', 'N/A')} seats)")
+
+
+# =========================================================================
+# TAB 3: 🎯 SCHOLARSHIPS
+# =========================================================================
+with tabs[2]:
+    st.markdown("### 🎯 Smart Scholarship & Eligibility Engine")
+    st.caption("Fill your academic & financial profile to match against 15+ central & J&K government scholarship programs.")
+
+    wiz_row1_c1, wiz_row1_c2, wiz_row1_c3, wiz_row1_c4 = st.columns(4)
+    with wiz_row1_c1:
+        w_stream = st.selectbox("🎓 Stream", ["PCM", "PCB", "Commerce", "Arts", "All"], key="sch_stream")
+    with wiz_row1_c2:
+        w_income_val = st.selectbox("💰 Annual Household Income", ["Below ₹2.50 Lakh", "₹2.50L – ₹8.00L", "Above ₹8.00 Lakh"], key="sch_income")
+    with wiz_row1_c3:
+        w_cat = st.selectbox("🏛️ Category / Domicile", ["OM", "SC", "ST", "OBC", "RBA", "Minority"], key="sch_cat")
+    with wiz_row1_c4:
+        w_gender = st.selectbox("👤 Gender", ["male", "female"], key="sch_gender")
+
+    wiz_row2_c1, wiz_row2_c2, wiz_row2_c3 = st.columns(3)
+    with wiz_row2_c1:
+        w_percentage = st.number_input("📊 Class 12th Board %", min_value=0, max_value=100, value=75, key="sch_pct")
+    with wiz_row2_c2:
+        w_age = st.number_input("🎂 Age (Years)", min_value=15, max_value=45, value=18, key="sch_age")
+    with wiz_row2_c3:
+        w_disability = st.checkbox("♿ Person with Disability (PwD)", key="sch_pwd")
+
+    income_map = {"Below ₹2.50 Lakh": 200000, "₹2.50L – ₹8.00L": 500000, "Above ₹8.00 Lakh": 1000000}
+
+    profile = {
+        "stream": w_stream,
+        "income": income_map.get(w_income_val, 500000),
+        "category": w_cat,
+        "gender": w_gender,
+        "percentage": w_percentage,
+        "age": w_age,
+        "disability": w_disability,
+        "domicile": "J&K",
+    }
+
+    matches = check_eligibility(profile)
+
+    if matches:
+        strong = [m for m in matches if m.get("match_score", 0) >= 80]
+        likely = [m for m in matches if 50 <= m.get("match_score", 0) < 80]
+
+        st.markdown(f"### ✅ Found **{len(matches)}** Matching Schemes")
+
+        if strong:
+            st.markdown("#### 🟢 High-Eligibility Schemes (>80% Match)")
+            for m in strong[:5]:
+                sch = m.get("scholarship", m)
+                name = sch.get("name", m.get("name", "Unknown"))
+                benefits = sch.get("benefits", {})
+                tuition = benefits.get("tuition_support", benefits.get("tuition_cap", ""))
+                maint = benefits.get("maintenance_allowance", "")
+                portal = sch.get("portal_url", "")
+                st.markdown(f"- 🎓 **{name}** — {tuition} {f'(+ {maint})' if maint else ''}")
+                if portal:
+                    st.caption(f"  🔗 [Apply on Official Portal: {portal}]({portal})")
+
+        if likely:
+            st.markdown("#### 🟡 Likely Eligible Schemes (50–80% Match)")
+            for m in likely[:4]:
+                sch = m.get("scholarship", m)
+                name = sch.get("name", m.get("name", "Unknown"))
+                st.markdown(f"- 📋 {name}")
+
+        # Required Documents Checklist
+        sch_ids = [m.get("scholarship", m).get("id", m.get("id", "")) for m in matches[:5]]
+        docs = get_documents_checklist(sch_ids)
+        if docs:
+            with st.expander(f"📋 Consolidated Documents Checklist ({len(docs)} items)", expanded=False):
+                for doc in docs:
+                    st.markdown(f"- ✅ {doc}")
+    else:
+        st.info("No scholarships matched this exact combination. Try adjusting stream or income parameters.")
+
+    if st.button("💬 Ask AI Advisor to Guide Me on These Scholarships", key="btn_sch_to_chat"):
+        schemes_text = ", ".join([m.get("scholarship", m).get("name", m.get("name", "")) for m in matches[:5]]) if matches else "available schemes"
+        st.session_state.messages.append({
+            "role": "user",
+            "content": f"Based on my profile ({w_stream}, income {w_income_val}, category {w_cat}, Class 12: {w_percentage}%), guide me on how to apply for: {schemes_text}"
+        })
+        st.rerun()
+
+
+# =========================================================================
+# TAB 4: 💼 CAREERS & JOBS
+# =========================================================================
+with tabs[3]:
+    st.markdown("### 💼 J&K Labor Market Intelligence & Career Navigator")
+    job_sub1, job_sub2 = st.tabs(["🔍 Browse 30+ Job Profiles", "🎯 Interactive Skill Gap Analyzer"])
+
+    with job_sub1:
+        st.caption("Explore government, banking, public sector, and private job profiles tailored for J&K youth.")
+        jb_col1, jb_col2 = st.columns(2)
+        with jb_col1:
+            jb_board = st.selectbox("🏛️ Recruitment Board / Sector", ["All"] + get_all_boards(), key="tab_jb_board")
+        with jb_col2:
+            jb_search = st.text_input("🔍 Search Job Title or Department", placeholder="e.g., Junior Assistant, KAS, Police, IT...", key="tab_jb_search")
+
+        filter_board = None if jb_board == "All" else jb_board
+        jobs_found = search_jobs(jb_search if jb_search else "", board=filter_board)
+
+        st.markdown(f"#### Found {len(jobs_found)} Opportunities")
+        for job in jobs_found[:8]:
+            card_md = render_job_card(job)
+            st.markdown(card_md)
+
+            if st.button(f"📝 View Exam Prep Roadmap: {job['title']}", key=f"prep_tab_{job['id']}"):
+                plan = get_exam_preparation_plan(job["id"])
+                if plan:
+                    st.markdown(f"**📚 Subject-wise Preparation Plan for {job['title']}:**")
+                    for subject in plan.get("subjects", []):
+                        if isinstance(subject, dict):
+                            st.caption(f"• **{subject.get('name', subject)}**: {subject.get('hours_per_week', '')} hrs/week")
+                        else:
+                            st.caption(f"• {subject}")
+                    if plan.get("timeline"):
+                        st.caption(f"⏱️ Recommended duration: {plan.get('timeline', 'N/A')}")
+                    if plan.get("resources"):
+                        st.caption(f"📖 Curated Books: {', '.join(plan['resources'][:5]) if isinstance(plan['resources'], list) else plan['resources']}")
+            st.markdown("---")
+
+    with job_sub2:
+        st.caption("Select your skills to reveal matched career pathways and missing competency requirements.")
+        available_skills = get_all_skills()
+        selected_skills = st.multiselect(
+            "🛠️ Select Your Existing Skills & Subjects",
+            options=available_skills,
+            default=[],
+            key="tab_skill_select"
+        )
+
+        if selected_skills:
+            career_matches = match_skills_to_careers(selected_skills)
+            if career_matches:
+                report_md = render_skill_gap_report(career_matches)
+                st.markdown(report_md)
+
+                if st.button("💬 Ask AI for Step-by-Step Skill Upgrade Roadmap", key="btn_skill_tab_ai"):
+                    skills_text = ", ".join(selected_skills)
+                    top_careers = ", ".join([c.get("title", c.get("job_title", "")) for c in career_matches[:3]])
+                    st.session_state.messages.append({
+                        "role": "user",
+                        "content": f"I currently know: {skills_text}. My target careers are: {top_careers}. Provide a month-by-month study roadmap to bridge my skill gaps."
+                    })
+                    st.rerun()
+            else:
+                st.info("No matching careers found for this specific combination.")
+        else:
+            st.info("Select one or more skills above to run the matching engine.")
+
+
+# =========================================================================
+# TAB 5: 🎤 MOCK INTERVIEW
+# =========================================================================
+with tabs[4]:
+    st.markdown("### 🎤 AI-Powered Mock Interview Simulator")
+    st.caption("Prepare for JKSSB, KAS, campus placements, and viva examinations with real-time AI rubric scoring.")
+
+    if "interview_session" not in st.session_state:
+        st.session_state.interview_session = None
+
+    templates = get_all_templates()
+
+    if st.session_state.interview_session is None:
+        template_id = st.selectbox(
+            "🎯 Select Interview Category",
+            options=list(templates.keys()),
+            format_func=lambda x: f"{templates[x].get('title', x)}",
+            key="tab_iv_template"
+        )
+
+        if template_id and templates.get(template_id):
+            tmpl = templates[template_id]
+            st.markdown(f"**{tmpl.get('title', template_id)}** — {tmpl.get('description', '')}")
+            st.caption(f"📋 {len(tmpl.get('rounds', []))} Rounds · {tmpl.get('questions_per_round', 3)} Questions/Round · Difficulty: **{tmpl.get('difficulty', 'moderate').upper()}**")
+
+        if st.button("▶️ Launch Mock Interview Session", key="btn_launch_iv_tab"):
+            session = start_interview(template_id)
+            st.session_state.interview_session = session
+            first_q = get_next_question(session)
+            if first_q:
+                st.session_state.current_iv_question = first_q
+            st.rerun()
+    else:
+        session = st.session_state.interview_session
+
+        if session.get("status") == "completed":
+            st.markdown("### 🏆 Interview Session Complete!")
+            report = generate_interview_report(session)
+            st.markdown(report)
+            if st.button("🔄 Start Another Practice Interview", key="btn_new_iv_tab"):
+                st.session_state.interview_session = None
+                if "current_iv_question" in st.session_state:
+                    del st.session_state["current_iv_question"]
+                st.rerun()
+        else:
+            progress = get_interview_progress(session)
+            st.progress(
+                progress.get("completed_questions", 0) / max(progress.get("total_questions", 1), 1),
+                text=f"Round: {progress.get('current_round_name', 'N/A')} | Question {progress.get('completed_questions', 0)+1} of {progress.get('total_questions', '?')}"
+            )
+
+            current_q = st.session_state.get("current_iv_question")
+            if current_q:
+                st.markdown(f"#### Round {current_q.get('round_number', 0)+1}: {current_q.get('round_name', '')}")
+                st.markdown(f"❓ **Question:** {current_q.get('question', 'Loading...')}")
+
+                answer = st.text_area("Your Response (Speak your thoughts or type clearly):", key=f"iv_ans_tab_{progress.get('completed_questions', 0)}", height=130)
+
+                btn_c1, btn_c2 = st.columns([1, 1])
+                with btn_c1:
+                    if st.button("📤 Submit Response for AI Evaluation", key="btn_sub_iv_tab"):
+                        if answer.strip():
+                            updated_session = submit_answer(session, answer.strip())
+                            st.session_state.interview_session = updated_session
+
+                            if updated_session.get("responses"):
+                                last = updated_session["responses"][-1]
+                                score = last.get("total_score", last.get("score_breakdown", {}).get("total_score", "N/A"))
+                                feedback = last.get("feedback", "")
+                                st.success(f"Evaluated Score: {score}/100 — {feedback[:200]}")
+
+                            next_q = get_next_question(updated_session)
+                            if next_q:
+                                st.session_state.current_iv_question = next_q
+                            else:
+                                updated_session["status"] = "completed"
+                                st.session_state.interview_session = updated_session
+                            st.rerun()
+                        else:
+                            st.warning("Please provide your answer before submitting.")
+                with btn_c2:
+                    if st.button("⏹️ Conclude Session Early", key="btn_end_iv_tab"):
+                        session["status"] = "completed"
+                        st.session_state.interview_session = session
+                        st.rerun()
+
+
+# =========================================================================
+# TAB 6: 📄 RESUME STUDIO
+# =========================================================================
+with tabs[5]:
+    st.markdown("### 📄 AI Resume Auditor & Job-Fit Analyzer")
+    st.caption("Upload your CV/resume in PDF format for automated rubric scoring, formatting critique, and role-match analysis.")
+
+    uploaded_resume = st.file_uploader("📎 Upload Resume PDF", type=["pdf"], key="tab_resume_upload")
+    target_role = st.selectbox(
+        "🎯 Select Desired Career / Target Role",
+        ["None"] + get_available_target_roles(),
+        key="tab_resume_role"
+    )
+    target_role_val = None if target_role == "None" else target_role
+
+    if uploaded_resume:
+        try:
+            resume_text = extract_text_from_pdf(uploaded_resume)
+            if resume_text and len(resume_text.strip()) > 20:
+                analysis = analyze_resume(resume_text, target_role=target_role_val)
+                scores = analysis.get("scores", {})
+
+                # Visual 4-dimension progress bars
+                st.markdown("#### 📊 Resume Performance Metrics")
+                s_col1, s_col2 = st.columns(2)
+                with s_col1:
+                    st.caption(f"Completeness: {scores.get('completeness', 0)}/25")
+                    st.progress(scores.get('completeness', 0) / 25)
+                    st.caption(f"Content Quality: {scores.get('content_quality', 0)}/25")
+                    st.progress(scores.get('content_quality', 0) / 25)
+                with s_col2:
+                    st.caption(f"Role Relevance: {scores.get('relevance', 0)}/25")
+                    st.progress(scores.get('relevance', 0) / 25)
+                    st.caption(f"ATS Formatting: {scores.get('formatting', 0)}/25")
+                    st.progress(scores.get('formatting', 0) / 25)
+
+                report = render_resume_report(analysis)
+                st.markdown(report)
+
+                if st.button("🤖 Generate Detailed AI Narrative Review", key="btn_ai_rev_tab"):
+                    with st.spinner("AI Counselor is auditing your resume structure..."):
+                        try:
+                            ai_review = get_ai_review(resume_text, target_role=target_role_val)
+                            st.markdown("### 🤖 Senior Career Advisor Feedback")
+                            st.markdown(ai_review)
+                        except Exception as e:
+                            st.warning(f"AI review service unavailable: {str(e)[:100]}. See the automated scorecard above.")
+
+                if target_role_val:
+                    job_results = search_jobs(target_role_val)
+                    if job_results:
+                        comparison = compare_to_job_requirements(
+                            analysis.get("sections", {}),
+                            job_results[0]
+                        )
+                        if comparison:
+                            st.markdown("### 📊 Target Job Compatibility")
+                            st.metric("Job Competency Match", f"{comparison.get('match_percentage', 0)}%")
+                            if comparison.get("skill_overlap"):
+                                st.markdown(f"✅ **Demonstrated Skills:** {', '.join(comparison['skill_overlap'][:8])}")
+                            if comparison.get("missing_skills"):
+                                st.markdown(f"❌ **Missing Competencies:** {', '.join(comparison['missing_skills'][:8])}")
+                            st.caption(f"💡 {comparison.get('recommendation', '')}")
+            else:
+                st.warning("Insufficient readable text extracted. Please ensure the PDF is not a scanned image.")
+        except Exception as e:
+            st.error(f"Error auditing resume: {str(e)[:200]}")
+
+
+# =========================================================================
+# TAB 7: 📊 ADMIN PORTAL (CONDITIONALLY UNLOCKED)
+# =========================================================================
+if len(tabs) > 6:
+    with tabs[6]:
+        st.markdown("### 📊 Institutional Dropout Prevention & Cohort Analytics")
+        st.caption("🔒 Verified Administrative View · Government of Jammu & Kashmir Education Department")
+
+        if "admin_cohort" not in st.session_state:
+            st.session_state.admin_cohort = simulate_demo_cohort(50)
+
+        cohort = st.session_state.admin_cohort
+        analytics = get_cohort_analytics(cohort)
+
+        admin_c1, admin_c2, admin_c3, admin_c4 = st.columns(4)
+        with admin_c1:
+            st.metric("👥 Monitored Students", analytics["total_students"])
+        with admin_c2:
+            at_risk = analytics["risk_distribution"].get("High", 0) + analytics["risk_distribution"].get("Critical", 0)
+            st.metric("⚠️ At-Risk Students", at_risk, delta=f"-{at_risk}" if at_risk > 0 else "0", delta_color="inverse")
+        with admin_c3:
+            st.metric("📊 Cohort Avg CGPA", f"{analytics['avg_cgpa']:.2f}")
+        with admin_c4:
+            st.metric("🎓 Scholarship Coverage", f"{analytics.get('scholarship_rate', 0):.0f}%")
+
+        st.markdown("#### Risk Distribution Breakdown")
+        risk_dist = analytics["risk_distribution"]
+        dist_cols = st.columns(4)
+        colors = {"Low": "🟢", "Medium": "🟡", "High": "🟠", "Critical": "🔴"}
+        for i, (cat, count) in enumerate(risk_dist.items()):
+            with dist_cols[i]:
+                st.markdown(f"{colors.get(cat, '')} **{cat}**: {count} Students")
+
+        st.bar_chart(risk_dist)
+
+        alerts = get_priority_alerts(cohort)
+        if alerts:
+            st.markdown(f"#### 🚨 Priority Dropout Intervention Alerts ({len(alerts)} flagged)")
+            for alert in alerts[:8]:
+                student = alert.get("student", alert)
+                risk = alert.get("risk_result", {})
+                name = student.get("name", "Unknown")
+                program = student.get("program", "")
+                risk_score = risk.get("total_score", 0)
+                risk_cat = risk.get("risk_category", "Unknown")
+                risk_color = risk.get("risk_color", "⚪")
+
+                with st.expander(f"{risk_color} {name} ({program}) — Risk: {risk_score:.0f}/100 [{risk_cat}]"):
+                    st.markdown(get_student_summary(student))
+                    interventions = alert.get("interventions", generate_intervention_plan(student, risk))
+                    if interventions:
+                        st.markdown("**📋 Prescribed Interventions:**")
+                        for iv in interventions[:5]:
+                            if isinstance(iv, dict):
+                                st.caption(f"{iv.get('icon', '•')} **[{iv.get('priority', '')}]** {iv.get('action', str(iv))} — *{iv.get('responsible', '')} ({iv.get('timeline', '')})*")
+                            else:
+                                st.caption(f"• {iv}")
+
+        st.markdown("#### 🔍 Student Roster Search")
+        student_search = st.text_input("Search student records by name, ID, or institution...", key="admin_search_tab")
+        if student_search:
+            found = search_students(cohort, student_search)
+            st.markdown(f"Found {len(found)} records:")
+            for s in found[:8]:
+                risk_r = calculate_risk_score(s)
+                st.caption(f"{risk_r.get('risk_color', '⚪')} **{s['name']}** ({s['id']}) | {s['program']} @ {s['institution']} | CGPA: {s['cgpa']} | Risk: {risk_r['total_score']:.0f}/100")
+
+        if st.button("📥 Export Comprehensive Cohort Advisory Report", key="btn_export_cohort_tab"):
+            report_text = export_cohort_report(analytics)
+            st.markdown(report_text)

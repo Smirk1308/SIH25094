@@ -809,3 +809,53 @@ def get_college_by_id(college_id: str) -> Optional[Dict]:
         if c["id"] == college_id:
             return c
     return None
+
+
+COLLEGE_COORDINATES = {
+    "nit_srinagar": (34.1245, 74.8384),
+    "iust_awantipora": (33.9267, 75.0167),
+    "ssm_parihaspora": (34.1481, 74.6067),
+    "miet_jammu": (32.6500, 74.8700),
+    "gec_jammu": (32.7000, 74.8700),
+    "gcet_safapora": (34.2268, 74.7063),
+    "bgsbu_rajouri": (33.3813, 74.3142),
+    "govt_poly_srinagar": (34.0750, 74.8100),
+    "gmc_srinagar": (34.0837, 74.8080),
+    "gmc_jammu": (32.7357, 74.8690),
+    "gmc_doda": (33.1464, 75.5458),
+    "gmc_rajouri": (33.3750, 74.3100),
+    "gmc_anantnag": (33.7311, 75.1522),
+    "gmc_kathua": (32.3739, 75.5186),
+    "gmc_baramulla": (34.2000, 74.3400),
+    "skims_soura": (34.1350, 74.7990),
+    "skims_bemina": (34.0800, 74.7700),
+    "gamc_akhnoor": (32.8980, 74.7380),
+    "gumc_ganderbal": (34.2167, 74.7700),
+    "ku_srinagar": (34.1264, 74.8360),
+    "ju_jammu": (32.7194, 74.8694),
+    "cuk_ganderbal": (34.2200, 74.7800),
+    "cuj_samba": (32.5583, 75.1167),
+    "skuast_kashmir": (34.1500, 74.8833),
+    "skuast_jammu": (32.6500, 74.8200),
+    "gdc_law_srinagar": (34.0900, 74.8000),
+}
+
+
+def get_colleges_map_data(colleges: Optional[List[Dict]] = None) -> List[Dict]:
+    """
+    Returns coordinate data for st.map visualization across J&K.
+    """
+    target = colleges if colleges is not None else COLLEGES_DATA
+    map_points = []
+    for c in target:
+        coords = COLLEGE_COORDINATES.get(c["id"])
+        if coords:
+            map_points.append({
+                "name": c["name"],
+                "latitude": coords[0],
+                "longitude": coords[1],
+                "district": c["district"],
+                "type": c["type"]
+            })
+    return map_points
+
