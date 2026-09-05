@@ -55,7 +55,7 @@ def get_best_groq_model(client):
 
 # Page configuration
 st.set_page_config(
-    page_title="Margdarshak J&K | AI Career Advisor",
+    page_title="PathSeva | AI Career Advisor",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -279,6 +279,58 @@ html, body, [class*="css"] {
     box-shadow: 0 4px 14px rgba(232, 118, 44, 0.35);
 }
 
+/* Sidebar gradient — logo colors */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0D2137 0%, #1B3A8C 55%, #1A6B3C 100%);
+    border-right: 1px solid rgba(26,107,60,0.3);
+}
+[data-testid="stSidebar"] * { color: white !important; }
+[data-testid="stSidebar"] .stButton button {
+    background: #1A6B3C; color: white;
+    border: none; border-radius: 8px; width: 100%;
+}
+[data-testid="collapsedControl"] { display: block; color: white; }
+
+/* App background */
+.stApp {
+    background: linear-gradient(135deg, #F4F8FC 0%, #EBF5F0 50%, #EEF2FA 100%);
+}
+.main .block-container { padding-top: 1.5rem; max-width: 860px; }
+
+/* User chat bubble */
+[data-testid="stChatMessage"]:has(
+  [data-testid="stChatMessageAvatarUser"])
+  [data-testid="stChatMessageContent"] {
+    background: linear-gradient(135deg, #1B3A8C, #0D2137);
+    color: white;
+    border-radius: 18px 18px 4px 18px;
+    padding: 14px 18px;
+    box-shadow: 0 4px 15px rgba(27,58,140,0.25);
+}
+
+/* Bot bubble */
+[data-testid="stChatMessage"]:has(
+  [data-testid="stChatMessageAvatarAssistant"])
+  [data-testid="stChatMessageContent"] {
+    background: white;
+    border-left: 4px solid #1A6B3C;
+    border-radius: 4px 18px 18px 18px;
+    padding: 14px 18px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+}
+
+/* Chat input */
+[data-testid="stChatInput"] textarea {
+    border-radius: 14px;
+    border: 2px solid #1B3A8C !important;
+    background: white;
+    box-shadow: 0 2px 8px rgba(27,58,140,0.1);
+}
+[data-testid="stChatInput"] textarea:focus {
+    border-color: #1A6B3C !important;
+    box-shadow: 0 2px 12px rgba(26,107,60,0.2) !important;
+}
+
 footer { visibility: hidden; }
 #MainMenu { visibility: hidden; }
 </style>
@@ -315,15 +367,34 @@ if "auto_indexed_once" not in st.session_state:
 # SIDEBAR CONTROLS (Clean, Query-Focused)
 # ==========================================
 with st.sidebar:
-    st.markdown("""
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-      <div style="font-size:28px;">🎓</div>
-      <div>
-        <div style="font-size:18px;font-weight:800;color:white;line-height:1.2;">Margdarshak J&K</div>
-        <div style="font-size:11px;color:#AEC6D0;font-weight:500;">AI Education & Career Advisory</div>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.sidebar.image("assets/logo.png", width=110)
+    st.sidebar.markdown("""
+<div style="text-align:center; padding:4px 0 12px;">
+  <div style="color:white;font-size:18px;font-weight:800;letter-spacing:1px;">
+    PathSeva
+  </div>
+  <div style="color:#AEC6D0;font-size:10px;margin-top:2px;">
+    by Team Error404 · NIE Mysuru
+  </div>
+  <div style="color:#F5A623;font-size:9px;margin-top:2px;letter-spacing:1px;">
+    SIH 2026 · SIH25094
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+    with st.sidebar.expander("About This Project"):
+        st.markdown("""
+    **Team Error404**
+    NIE Mysuru · CSE · Batch 2027
+
+    **Problem Statement:** SIH25094
+    Government of Jammu & Kashmir
+    Theme: Smart Education
+
+    **Stack:** LangChain · ChromaDB · Groq · Streamlit
+
+    *All answers sourced from official J&K government documents.*
+    """)
 
     # 1. Network & Engine Mode Selector (Major 2G Selling Point)
     st.subheader("📶 Network & Engine Mode")
@@ -374,22 +445,26 @@ with st.sidebar:
 # MAIN INTERFACE - DASHBOARD HERO & METRICS
 # ==========================================
 
-# 1. HERO SECTION WITH ANIMATED GLOW
+# 1. HERO SECTION
 st.markdown("""
-<div class="hero-container">
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-    <span style="background:rgba(232,118,44,0.2);color:#E8762C;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:1.5px;border:1px solid rgba(232,118,44,0.4);">
-      SIH 2026 · SIH25094
-    </span>
-    <span style="background:rgba(46,204,113,0.2);color:#2ECC71;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid rgba(46,204,113,0.4);">
-      ⚡ 2G Edge Enabled
-    </span>
-  </div>
-  <div style="color:white;font-size:24px;font-weight:800;line-height:1.3;margin-bottom:8px;">
-    Empowering Every Student in Jammu & Kashmir
-  </div>
-  <div style="color:#B8D5E5;font-size:14px;line-height:1.6;max-width:680px;">
-    Free, cited 24/7 AI career & scholarship counselor answering strictly from verified government archives.
+<div style="background:linear-gradient(135deg,#0D2137 0%,#1B3A8C 60%,#1A6B3C 100%);
+     border-radius:16px; padding:28px; margin-bottom:20px;
+     border-bottom:4px solid #F5A623;">
+  <div style="display:flex; align-items:center; gap:16px;">
+    <img src="app/static/logo.png" width="70"
+         style="border-radius:8px; flex-shrink:0;">
+    <div>
+      <div style="color:#F5A623;font-size:10px;font-weight:700;
+           letter-spacing:2px;margin-bottom:4px;">
+        SIH 2026 · SIH25094 · TEAM ERROR404
+      </div>
+      <div style="color:white;font-size:22px;font-weight:800;line-height:1.2;">
+        PathSeva
+      </div>
+      <div style="color:#AEC6D0;font-size:13px;margin-top:4px;">
+        Career & Education Advisor for J&K · Free · Cited · 2G-Ready
+      </div>
+    </div>
   </div>
 </div>
 """, unsafe_allow_html=True)
