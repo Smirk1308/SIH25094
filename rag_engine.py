@@ -20,6 +20,11 @@ import tiktoken
 import chromadb
 from chromadb.utils import embedding_functions
 from groq import Groq
+import streamlit as st
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
+import google.api_core.exceptions as google_exceptions
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 # Default Directory Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -33,6 +38,9 @@ DEFAULT_GROQ_MODEL = "llama3-8b-8192"
 CHUNK_SIZE = 300
 CHUNK_OVERLAP = 50
 TOKENIZER_ENCODING = "cl100k_base"
+
+# Smart Model Router import for complexity-based tier selection
+from model_router import get_llm, render_query_info
 
 # Singleton cached embedding function to slash cold start latency
 _CACHED_EMBEDDING_FN = None
@@ -492,110 +500,140 @@ Instructions:
     def generate_answer(
         self,
         query: str,
-        api_key: str,
+        api_key: Optional[str] = None,
         model: str = DEFAULT_GROQ_MODEL,
         top_k: int = 5,
         history: Optional[List[Dict[str, str]]] = None,
         stream: bool = False
     ) -> Any:
-        """Retrieve context and generate answer via Groq API with persistent conversation memory."""
-        client = Groq(api_key=api_key)
-
-        # 1. Contextualize query if there is conversation history (for follow-up questions like "what about scholarships for that?")
+        """Retrieve context and generate answer via Gemini 2.0 Flash (primary) with Groq (fallback)."""
+        # 1. Contextualize query if there is conversation history
+        client = None
+        if api_key:
+            try:
+                client = Groq(api_key=api_key)
+            except Exception:
+                pass
         search_query = self.contextualize_query(query, history, client=client, model=model)
         
-        # 2. Retrieve top-k context chunks using the contextualized search query
+        # 2. Retrieve top-k context chunks using the search query
         context_chunks = self.retrieve(search_query, top_k=top_k)
 
         # 3. Format the last 3 exchanges (up to 6 messages) as conversation history
         history_str = self.format_conversation_history(history, max_exchanges=3)
         prompt = self.build_prompt(query, context_chunks, history_str=history_str)
 
-        # 4. Assemble messages for chat completion
+        # 4. Assemble LangChain messages
         messages = [
-            {
-                "role": "system",
-                "content": (
+            SystemMessage(
+                content=(
                     "You are a helpful, authoritative, and encouraging Career Advisor. "
                     "You provide actionable career guidance, resume suggestions, interview strategies, "
                     "and technical roadmaps based on provided documentation and industry standards. "
                     "Maintain continuity with the ongoing conversation."
                 )
-            }
+            )
         ]
 
-        # Pass the last 3 exchanges (up to 6 turns) as role-based chat history
         if history:
             recent_turns = [turn for turn in history if turn.get("role") in ["user", "assistant"]][-6:]
             for turn in recent_turns:
-                messages.append({"role": turn["role"], "content": turn["content"]})
+                if turn.get("role") == "user":
+                    messages.append(HumanMessage(content=turn.get("content", "")))
+                else:
+                    messages.append(AIMessage(content=turn.get("content", "")))
 
-        messages.append({"role": "user", "content": prompt})
+        messages.append(HumanMessage(content=prompt))
 
-        def try_create_completion(target_model: str, is_stream: bool):
-            return client.chat.completions.create(
-                model=target_model,
-                messages=messages,
-                temperature=0.4,
-                max_tokens=2048,
-                stream=is_stream
-            )
-
-        # Attempt with requested model, fallback if model_not_found
+        # Check for Gemini API Key
+        google_api_key = None
         try:
-            if stream:
-                response_stream = try_create_completion(model, is_stream=True)
-                
-                def stream_generator() -> Generator[str, None, None]:
-                    for chunk in response_stream:
-                        if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
-                            yield chunk.choices[0].delta.content
+            if hasattr(st, "secrets") and "GOOGLE_API_KEY" in st.secrets:
+                google_api_key = str(st.secrets["GOOGLE_API_KEY"]).strip()
+        except Exception:
+            pass
+        if not google_api_key:
+            google_api_key = os.getenv("GOOGLE_API_KEY", "").strip()
 
+        # Check for Groq API Key
+        groq_api_key = api_key
+        if not groq_api_key:
+            try:
+                if hasattr(st, "secrets") and "GROQ_API_KEY" in st.secrets:
+                    groq_api_key = str(st.secrets["GROQ_API_KEY"]).strip()
+            except Exception:
+                pass
+            if not groq_api_key:
+                groq_api_key = os.getenv("GROQ_API_KEY", "").strip()
+
+        # Determine history length and route LLM using model_router
+        history_length = len(st.session_state.get("messages", [])) if hasattr(st, "session_state") else 0
+        try:
+            render_query_info(query, history_length)
+        except Exception:
+            pass
+
+        # 1. Attempt Primary: Gemini via model_router
+        if google_api_key:
+            try:
+                gemini_llm = get_llm(query, history_length)
+                active_model_id = st.session_state.get("active_model_id", "gemini-2.0-flash") if hasattr(st, "session_state") else "gemini-2.0-flash"
+                if stream:
+                    response_stream = gemini_llm.stream(messages)
+                    def stream_generator() -> Generator[str, None, None]:
+                        for chunk in response_stream:
+                            if hasattr(chunk, "content") and chunk.content:
+                                yield chunk.content
+                    return {
+                        "stream": stream_generator(),
+                        "sources": context_chunks,
+                        "search_query": search_query,
+                        "model_used": active_model_id
+                    }
+                else:
+                    response = gemini_llm.invoke(messages)
+                    content = response.content if hasattr(response, "content") else str(response)
+                    return {
+                        "answer": content,
+                        "sources": context_chunks,
+                        "search_query": search_query,
+                        "model_used": active_model_id
+                    }
+            except Exception as e:
+                # If Gemini fails and no Groq fallback is configured, re-raise for diagnostic handling
+                if not groq_api_key:
+                    raise e
+
+        # 2. Attempt Fallback: Groq
+        if groq_api_key:
+            groq_llm = ChatGroq(
+                api_key=groq_api_key,
+                model=model,
+                max_tokens=1024,
+                temperature=0.4
+            )
+            if stream:
+                response_stream = groq_llm.stream(messages)
+                def stream_generator_groq() -> Generator[str, None, None]:
+                    for chunk in response_stream:
+                        if hasattr(chunk, "content") and chunk.content:
+                            yield chunk.content
                 return {
-                    "stream": stream_generator(),
+                    "stream": stream_generator_groq(),
                     "sources": context_chunks,
                     "search_query": search_query,
-                    "model_used": model
+                    "model_used": f"{model} (Groq Fallback)"
                 }
             else:
-                response = try_create_completion(model, is_stream=False)
-                content = response.choices[0].message.content
+                response = groq_llm.invoke(messages)
+                content = response.content if hasattr(response, "content") else str(response)
                 return {
                     "answer": content,
                     "sources": context_chunks,
                     "search_query": search_query,
-                    "model_used": model
+                    "model_used": f"{model} (Groq Fallback)"
                 }
-        except Exception as e:
-            err_str = str(e)
-            # If model was not found (404), attempt fallback to standard llama3-8b-8192 or llama-3.3-70b-versatile
-            if "model_not_found" in err_str or "404" in err_str:
-                fallback_models = [m for m in ["llama3-8b-8192", "llama-3.3-70b-versatile", "llama3-70b-8192"] if m != model]
-                for fb_model in fallback_models:
-                    try:
-                        if stream:
-                            response_stream = try_create_completion(fb_model, is_stream=True)
-                            def stream_generator_fb() -> Generator[str, None, None]:
-                                for chunk in response_stream:
-                                    if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
-                                        yield chunk.choices[0].delta.content
-                            return {
-                                "stream": stream_generator_fb(),
-                                "sources": context_chunks,
-                                "search_query": search_query,
-                                "model_used": fb_model
-                            }
-                        else:
-                            response = try_create_completion(fb_model, is_stream=False)
-                            content = response.choices[0].message.content
-                            return {
-                                "answer": content,
-                                "sources": context_chunks,
-                                "search_query": search_query,
-                                "model_used": fb_model
-                            }
-                    except Exception:
-                        continue
-            raise e
+
+        raise ValueError("Neither GOOGLE_API_KEY nor GROQ_API_KEY is configured.")
 
 

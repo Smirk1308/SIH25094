@@ -396,6 +396,9 @@ with st.sidebar:
     *All answers sourced from official J&K government documents.*
     """)
 
+    from model_router import render_model_badge
+    render_model_badge()
+
     # 1. Network & Engine Mode Selector (Major 2G Selling Point)
     st.subheader("📶 Network & Engine Mode")
     network_mode = st.radio(
