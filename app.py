@@ -5,8 +5,13 @@ High-End Competitive UI with:
 2. ⚡ 2G Offline & Instant Query Engine (<10ms latency, zero API calls).
 3. 🌐 AI Cloud Mode with Gemini & Groq & ChromaDB vector search.
 4. 🤖 Smart Auto-Detect with Zero-Downtime Fallback.
-5. 🎯 3-Question Instant Scholarship & Career Eligibility Matcher.
+5. 🎯 Smart Scholarship Eligibility Engine (7-field profile matching).
 6. 🗂️ Interactive Category Prompt Explorer (Scholarships, Medical, Engineering, Careers).
+7. 🏫 College Explorer with seat matrix & district-level filtering.
+8. 💼 Job Explorer with skill-to-career matching & exam prep plans.
+9. 🎤 AI Mock Interview Simulator with rubric scoring.
+10. 📄 Resume Analyzer with section extraction & scoring.
+11. 📊 Institutional Admin Portal with dropout risk analytics.
 """
 
 import os
@@ -16,6 +21,14 @@ from groq import Groq
 from rag_engine import RAGEngine, DEFAULT_GROQ_MODEL, DOCS_DIR, CHROMA_DIR
 from offline_engine import offline_engine, get_2g_response
 from error_handler import render_error_card, ErrorDiagnostic
+
+# --- Advanced Feature Modules ---
+from college_data import search_colleges, get_seat_matrix, get_colleges_by_district, get_all_districts, get_all_college_types, get_cutoff_comparison, render_college_card, get_college_by_id
+from scholarship_engine import check_eligibility, get_deadline_calendar, render_eligibility_report, get_documents_checklist, render_scholarship_card, search_scholarships
+from job_intelligence import search_jobs, match_skills_to_careers, get_exam_preparation_plan, get_all_boards, get_all_skills, render_job_card, render_skill_gap_report, get_job_by_id
+from mock_interview import get_all_templates, start_interview, get_next_question, submit_answer, generate_interview_report, get_interview_progress, evaluate_answer
+from resume_analyzer import extract_text_from_pdf, analyze_resume, render_resume_report, get_available_target_roles, get_ai_review, compare_to_job_requirements
+from student_analytics import simulate_demo_cohort, get_cohort_analytics, calculate_risk_score, generate_intervention_plan, get_priority_alerts, get_student_summary, export_cohort_report, search_students
 
 # Load environment variables (fallback support)
 load_dotenv()
@@ -459,9 +472,46 @@ with st.sidebar:
 
     st.divider()
 
+    # 📅 Scholarship Deadline Calendar
+    st.subheader("📅 Upcoming Deadlines")
+    try:
+        calendar = get_deadline_calendar()
+        upcoming = [c for c in calendar if c.get("status") in ("open", "upcoming")][:3]
+        if upcoming:
+            for item in upcoming:
+                status_color = "🟢" if item["status"] == "open" else "🟡"
+                st.caption(f"{status_color} **{item['name']}** — {item.get('deadline_display', item.get('application_close', 'N/A'))}")
+        else:
+            st.caption("No upcoming deadlines tracked.")
+    except Exception:
+        st.caption("Deadline calendar unavailable.")
+
+    st.divider()
+
+    # 🔐 Admin Portal Access
+    st.subheader("🔐 Admin Portal")
+    admin_password = st.text_input("Enter Admin Password", type="password", key="admin_pwd")
+    if admin_password:
+        expected_pwd = ""
+        try:
+            expected_pwd = st.secrets.get("ADMIN_PASSWORD", "admin123")
+        except Exception:
+            expected_pwd = os.getenv("ADMIN_PASSWORD", "admin123")
+        if admin_password == expected_pwd:
+            st.session_state.admin_mode = True
+            st.success("✅ Admin access granted")
+        else:
+            st.session_state.admin_mode = False
+            st.error("❌ Invalid password")
+    
+    st.divider()
+
     # Clear Chat History
     if st.button("🗑️ Clear Chat History"):
         st.session_state.messages = []
+        for key in ["interview_session", "admin_mode"]:
+            if key in st.session_state:
+                del st.session_state[key]
         st.rerun()
 
 
@@ -554,49 +604,102 @@ st.markdown("""
 
 
 # ==========================================
-# 4. INTERACTIVE 3-QUESTION ELIGIBILITY WIZARD
+# 4. SMART SCHOLARSHIP ELIGIBILITY ENGINE
 # ==========================================
-with st.expander("🎯 3-Question Instant Scholarship & Eligibility Checker", expanded=False):
-    st.caption("Select your profile parameters below to see exact matching government schemes and scholarships:")
-    wiz_col1, wiz_col2, wiz_col3 = st.columns(3)
+with st.expander("🎯 Smart Scholarship & Eligibility Checker", expanded=False):
+    st.caption("Fill your profile to discover **all matching scholarships** from 15+ government schemes:")
+    wiz_row1_c1, wiz_row1_c2, wiz_row1_c3, wiz_row1_c4 = st.columns(4)
     
-    with wiz_col1:
+    with wiz_row1_c1:
         w_stream = st.selectbox(
-            "🎓 Your Current Stream / Level",
-            ["Class 12 Science (PCM)", "Class 12 Science (PCB)", "Commerce", "Arts & Humanities", "College Graduate"]
+            "🎓 Stream",
+            ["PCM", "PCB", "Commerce", "Arts", "All"],
+            key="wiz_stream"
         )
-    with wiz_col2:
-        w_income = st.selectbox(
-            "💰 Annual Household Income",
-            ["Below ₹2.50 Lakh", "₹2.50 Lakh – ₹8.00 Lakh", "Above ₹8.00 Lakh"]
+    with wiz_row1_c2:
+        w_income_val = st.selectbox(
+            "💰 Annual Income",
+            ["Below ₹2.50 Lakh", "₹2.50L – ₹8.00L", "Above ₹8.00 Lakh"],
+            key="wiz_income"
         )
-    with wiz_col3:
+    with wiz_row1_c3:
         w_cat = st.selectbox(
-            "🏛️ Domicile & Category",
-            ["Open Merit (OM)", "Minority Community", "RBA / ALC / IB", "Scheduled Tribe (ST) / SC"]
+            "🏛️ Category",
+            ["OM", "SC", "ST", "OBC", "RBA", "Minority"],
+            key="wiz_cat"
         )
-
-    # Compute matches
-    matched_schemes = []
-    if w_income in ["Below ₹2.50 Lakh", "₹2.50 Lakh – ₹8.00 Lakh"]:
-        matched_schemes.append("🎓 **PMSSS J&K**: 5000 seats, full college fees + ₹1 Lakh/year maintenance allowance.")
-    if w_income == "Below ₹2.50 Lakh":
-        matched_schemes.append("💰 **Post-Matric Scholarship (NSP)**: Tuition fee reimbursement + monthly maintenance.")
-    if w_cat == "Minority Community" and w_income == "Below ₹2.50 Lakh":
-        matched_schemes.append("🌟 **Merit-cum-Means Minority Scholarship**: Up to ₹20,000 course fees for technical degrees.")
-    if "Science" in w_stream:
-        matched_schemes.append("🔬 **INSPIRE Scholarship (DST)**: ₹80,000/year for pure sciences students in top 1% board marks.")
-    if w_cat in ["RBA / ALC / IB", "Scheduled Tribe (ST) / SC"]:
-        matched_schemes.append("🏛️ **Category Quota & Tribal Affairs Aid**: Reserved seat allocations in JKCET & NEET + PMS-ST.")
-
-    st.markdown("**🌟 Matching Opportunities for Your Profile:**")
-    for s in matched_schemes:
-        st.markdown(f"- {s}")
+    with wiz_row1_c4:
+        w_gender = st.selectbox(
+            "👤 Gender",
+            ["male", "female"],
+            key="wiz_gender"
+        )
     
-    if st.button("💬 Ask Advisor to Guide Me on These Schemes", key="btn_wiz"):
+    wiz_row2_c1, wiz_row2_c2, wiz_row2_c3 = st.columns(3)
+    with wiz_row2_c1:
+        w_percentage = st.number_input("📊 Class 12 %", min_value=0, max_value=100, value=75, key="wiz_pct")
+    with wiz_row2_c2:
+        w_age = st.number_input("🎂 Age", min_value=15, max_value=45, value=18, key="wiz_age")
+    with wiz_row2_c3:
+        w_disability = st.checkbox("♿ Person with Disability", key="wiz_pwd")
+    
+    # Map income selection to numeric value
+    income_map = {"Below ₹2.50 Lakh": 200000, "₹2.50L – ₹8.00L": 500000, "Above ₹8.00 Lakh": 1000000}
+    
+    profile = {
+        "stream": w_stream,
+        "income": income_map.get(w_income_val, 500000),
+        "category": w_cat,
+        "gender": w_gender,
+        "percentage": w_percentage,
+        "age": w_age,
+        "disability": w_disability,
+        "domicile": "J&K",
+    }
+    
+    matches = check_eligibility(profile)
+    
+    if matches:
+        strong = [m for m in matches if m.get("match_score", 0) >= 80]
+        likely = [m for m in matches if 50 <= m.get("match_score", 0) < 80]
+        check = [m for m in matches if m.get("match_score", 0) < 50]
+        
+        st.markdown(f"### ✅ Found **{len(matches)}** Matching Scholarships")
+        
+        if strong:
+            st.markdown("**🟢 Strong Match (>80% eligibility):**")
+            for m in strong[:5]:
+                sch = m.get("scholarship", m)
+                name = sch.get("name", m.get("name", "Unknown"))
+                benefits = sch.get("benefits", {})
+                tuition = benefits.get("tuition_support", benefits.get("tuition_cap", ""))
+                portal = sch.get("portal_url", "")
+                st.markdown(f"- 🎓 **{name}** — {tuition}")
+                if portal:
+                    st.caption(f"  🔗 [{portal}]({portal})")
+        
+        if likely:
+            st.markdown("**🟡 Likely Eligible (50-80%):**")
+            for m in likely[:3]:
+                sch = m.get("scholarship", m)
+                name = sch.get("name", m.get("name", "Unknown"))
+                st.markdown(f"- 📋 {name}")
+        
+        # Document checklist
+        sch_ids = [m.get("scholarship", m).get("id", m.get("id", "")) for m in matches[:5]]
+        docs = get_documents_checklist(sch_ids)
+        if docs:
+            with st.expander(f"📋 Documents Required ({len(docs)} items)"):
+                for doc in docs:
+                    st.markdown(f"- ✅ {doc}")
+    else:
+        st.info("No scholarships matched your profile. Try adjusting your criteria.")
+    
+    if st.button("💬 Ask AI Advisor About My Eligibility", key="btn_wiz"):
+        schemes_text = ", ".join([m.get("scholarship", m).get("name", m.get("name", "")) for m in matches[:5]]) if matches else "any available scholarships"
         st.session_state.messages.append({
             "role": "user",
-            "content": f"Based on my profile ({w_stream}, income {w_income}, category {w_cat}), what scholarships and admissions can I apply for?"
+            "content": f"Based on my profile (Stream: {w_stream}, Income: {w_income_val}, Category: {w_cat}, Gender: {w_gender}, Class 12: {w_percentage}%, Age: {w_age}), guide me on: {schemes_text}"
         })
         st.rerun()
 
@@ -668,7 +771,369 @@ if len(st.session_state.messages) == 0:
 
 
 # ==========================================
-# 6. INTERACTIVE CHAT HISTORY DISPLAY
+# 6. 🏫 COLLEGE EXPLORER
+# ==========================================
+with st.expander("🏫 College Explorer — J&K Seat Matrix & Cutoffs", expanded=False):
+    st.caption("Search and compare 22+ colleges across J&K with seat matrices, cutoffs, and admission details.")
+    
+    ce_col1, ce_col2, ce_col3 = st.columns(3)
+    with ce_col1:
+        ce_district = st.selectbox("📍 District", ["All"] + get_all_districts(), key="ce_district")
+    with ce_col2:
+        ce_type = st.selectbox("🎓 College Type", ["All"] + get_all_college_types(), key="ce_type")
+    with ce_col3:
+        ce_search = st.text_input("🔍 Search", placeholder="e.g., NIT, GMC, IUST...", key="ce_search")
+    
+    # Apply filters
+    filter_district = None if ce_district == "All" else ce_district
+    filter_type = None if ce_type == "All" else ce_type
+    
+    if ce_search:
+        colleges_found = search_colleges(ce_search, district=filter_district, college_type=filter_type)
+    elif filter_district or filter_type:
+        colleges_found = search_colleges("", district=filter_district, college_type=filter_type)
+    else:
+        colleges_found = search_colleges("")  # Show all
+    
+    if colleges_found:
+        st.markdown(f"**Found {len(colleges_found)} colleges:**")
+        for college in colleges_found[:10]:
+            card_md = render_college_card(college)
+            st.markdown(card_md)
+            
+            # Seat matrix expander
+            seat_data = get_seat_matrix(college["id"])
+            if seat_data and seat_data.get("branches"):
+                with st.expander(f"📊 Seat Matrix — {college['name']}", expanded=False):
+                    for branch in seat_data["branches"]:
+                        st.caption(
+                            f"**{branch['name']}**: Total {branch.get('total_seats', 'N/A')} seats | "
+                            f"OM: {branch.get('seats_om', '-')} | SC: {branch.get('seats_sc', '-')} | "
+                            f"ST: {branch.get('seats_st', '-')} | RBA: {branch.get('seats_rba', '-')}"
+                        )
+            st.markdown("---")
+    else:
+        st.info("No colleges match your filters. Try a different search.")
+    
+    # Compare colleges
+    all_colleges = search_colleges("")
+    college_names = {c["id"]: c["name"] for c in all_colleges}
+    compare_ids = st.multiselect(
+        "📊 Compare Colleges (select 2-4)",
+        options=list(college_names.keys()),
+        format_func=lambda x: college_names.get(x, x),
+        max_selections=4,
+        key="ce_compare"
+    )
+    if len(compare_ids) >= 2:
+        comparison = get_cutoff_comparison(compare_ids)
+        if comparison:
+            st.markdown("### Cutoff Comparison")
+            for item in comparison:
+                st.markdown(f"**{item.get('college_name', item.get('id', ''))}**")
+                for b in item.get("branches", [])[:5]:
+                    st.caption(f"  {b['name']}: {b.get('cutoff_info', 'N/A')}")
+
+
+# ==========================================
+# 7. 💼 JOB EXPLORER & SKILL GAP ANALYZER
+# ==========================================
+with st.expander("💼 Job Explorer & Skill Gap Analyzer", expanded=False):
+    job_tab1, job_tab2 = st.tabs(["🔍 Browse Jobs", "🎯 Skill Gap Analyzer"])
+    
+    with job_tab1:
+        st.caption("Explore 30+ career opportunities across J&K government, banking, central services, and private sector.")
+        jb_col1, jb_col2 = st.columns(2)
+        with jb_col1:
+            jb_board = st.selectbox("🏛️ Board / Sector", ["All"] + get_all_boards(), key="jb_board")
+        with jb_col2:
+            jb_search = st.text_input("🔍 Search Jobs", placeholder="e.g., Junior Assistant, KAS, Police...", key="jb_search")
+        
+        filter_board = None if jb_board == "All" else jb_board
+        jobs_found = search_jobs(jb_search if jb_search else "", board=filter_board)
+        
+        if jobs_found:
+            st.markdown(f"**Found {len(jobs_found)} job profiles:**")
+            for job in jobs_found[:8]:
+                card_md = render_job_card(job)
+                st.markdown(card_md)
+                
+                # Exam prep plan button
+                if st.button(f"📝 Exam Prep Plan: {job['title']}", key=f"prep_{job['id']}"):
+                    plan = get_exam_preparation_plan(job["id"])
+                    if plan:
+                        st.markdown(f"**📚 Preparation Plan for {job['title']}:**")
+                        for subject in plan.get("subjects", []):
+                            if isinstance(subject, dict):
+                                st.caption(f"• {subject.get('name', subject)}: {subject.get('hours_per_week', '')} hrs/week")
+                            else:
+                                st.caption(f"• {subject}")
+                        if plan.get("timeline"):
+                            st.caption(f"⏱️ Recommended duration: {plan.get('timeline', 'N/A')}")
+                        if plan.get("resources"):
+                            st.caption(f"📖 Resources: {', '.join(plan['resources'][:5]) if isinstance(plan['resources'], list) else plan['resources']}")
+                st.markdown("---")
+        else:
+            st.info("No jobs match your search. Try different keywords.")
+    
+    with job_tab2:
+        st.caption("Select your current skills to discover matching career paths and identify gaps.")
+        available_skills = get_all_skills()
+        selected_skills = st.multiselect(
+            "🛠️ Your Current Skills",
+            options=available_skills,
+            default=[],
+            key="skill_select"
+        )
+        
+        if selected_skills:
+            career_matches = match_skills_to_careers(selected_skills)
+            if career_matches:
+                report_md = render_skill_gap_report(career_matches)
+                st.markdown(report_md)
+                
+                if st.button("💬 Ask AI for Personalized Career Roadmap", key="btn_skill_ai"):
+                    skills_text = ", ".join(selected_skills)
+                    top_careers = ", ".join([c.get("title", c.get("job_title", "")) for c in career_matches[:3]])
+                    st.session_state.messages.append({
+                        "role": "user",
+                        "content": f"I have these skills: {skills_text}. My top matching careers are: {top_careers}. Give me a detailed roadmap to achieve my best career match."
+                    })
+                    st.rerun()
+            else:
+                st.info("No career matches found for your skill combination.")
+        else:
+            st.info("Select your skills above to see matching career paths.")
+
+
+# ==========================================
+# 8. 🎤 AI MOCK INTERVIEW SIMULATOR
+# ==========================================
+with st.expander("🎤 AI Mock Interview Simulator", expanded=False):
+    st.caption("Practice for J&K government exams, placements, and professional interviews with AI-powered scoring.")
+    
+    # Initialize interview session state
+    if "interview_session" not in st.session_state:
+        st.session_state.interview_session = None
+    
+    templates = get_all_templates()
+    
+    if st.session_state.interview_session is None:
+        # Interview selection screen
+        template_id = st.selectbox(
+            "🎯 Select Interview Type",
+            options=list(templates.keys()),
+            format_func=lambda x: f"{templates[x].get('title', x)}",
+            key="iv_template"
+        )
+        
+        if template_id and templates.get(template_id):
+            tmpl = templates[template_id]
+            st.markdown(f"**{tmpl.get('title', template_id)}** — {tmpl.get('description', '')}")
+            st.caption(f"📋 {len(tmpl.get('rounds', []))} rounds · {tmpl.get('questions_per_round', 3)} questions each · Difficulty: {tmpl.get('difficulty', 'moderate')}")
+        
+        if st.button("▶️ Start Mock Interview", key="btn_start_iv"):
+            session = start_interview(template_id)
+            st.session_state.interview_session = session
+            first_q = get_next_question(session)
+            if first_q:
+                st.session_state.current_iv_question = first_q
+            st.rerun()
+    else:
+        # Active interview
+        session = st.session_state.interview_session
+        
+        if session.get("status") == "completed":
+            # Show report
+            st.markdown("### 🏆 Interview Complete!")
+            report = generate_interview_report(session)
+            st.markdown(report)
+            if st.button("🔄 Start New Interview", key="btn_new_iv"):
+                st.session_state.interview_session = None
+                if "current_iv_question" in st.session_state:
+                    del st.session_state["current_iv_question"]
+                st.rerun()
+        else:
+            # Show current question
+            progress = get_interview_progress(session)
+            st.progress(
+                progress.get("completed_questions", 0) / max(progress.get("total_questions", 1), 1),
+                text=f"Round: {progress.get('current_round_name', 'N/A')} | Q{progress.get('completed_questions', 0)+1}/{progress.get('total_questions', '?')}"
+            )
+            
+            current_q = st.session_state.get("current_iv_question")
+            if current_q:
+                st.markdown(f"**Round {current_q.get('round_number', 0)+1}: {current_q.get('round_name', '')}**")
+                st.markdown(f"❓ {current_q.get('question', 'Loading...')}")
+                
+                answer = st.text_area("Your Answer:", key=f"iv_ans_{progress.get('completed_questions', 0)}", height=120)
+                
+                if st.button("📤 Submit Answer", key="btn_submit_iv"):
+                    if answer.strip():
+                        updated_session = submit_answer(session, answer.strip())
+                        st.session_state.interview_session = updated_session
+                        
+                        # Show score for last answer
+                        if updated_session.get("responses"):
+                            last = updated_session["responses"][-1]
+                            score = last.get("total_score", last.get("score_breakdown", {}).get("total_score", "N/A"))
+                            feedback = last.get("feedback", "")
+                            st.success(f"Score: {score}/100 — {feedback[:200]}")
+                        
+                        # Get next question
+                        next_q = get_next_question(updated_session)
+                        if next_q:
+                            st.session_state.current_iv_question = next_q
+                        else:
+                            updated_session["status"] = "completed"
+                            st.session_state.interview_session = updated_session
+                        st.rerun()
+                    else:
+                        st.warning("Please enter your answer before submitting.")
+            
+            if st.button("⏹️ End Interview Early", key="btn_end_iv"):
+                session["status"] = "completed"
+                st.session_state.interview_session = session
+                st.rerun()
+
+
+# ==========================================
+# 9. 📄 RESUME ANALYZER
+# ==========================================
+with st.expander("📄 Resume Analyzer", expanded=False):
+    st.caption("Upload your resume (PDF) for automated section extraction, scoring, and improvement suggestions.")
+    
+    uploaded_resume = st.file_uploader("📎 Upload Resume (PDF)", type=["pdf"], key="resume_upload")
+    target_role = st.selectbox(
+        "🎯 Target Role (optional)",
+        ["None"] + get_available_target_roles(),
+        key="resume_role"
+    )
+    target_role_val = None if target_role == "None" else target_role
+    
+    if uploaded_resume:
+        try:
+            resume_text = extract_text_from_pdf(uploaded_resume)
+            if resume_text and len(resume_text.strip()) > 20:
+                analysis = analyze_resume(resume_text, target_role=target_role_val)
+                report = render_resume_report(analysis)
+                st.markdown(report)
+                
+                # AI Review button
+                if st.button("🤖 Get AI-Powered Review", key="btn_ai_resume"):
+                    with st.spinner("AI is reviewing your resume..."):
+                        try:
+                            ai_review = get_ai_review(resume_text, target_role=target_role_val)
+                            st.markdown("### 🤖 AI Review")
+                            st.markdown(ai_review)
+                        except Exception as e:
+                            st.warning(f"AI review unavailable: {str(e)[:100]}. See the automated analysis above.")
+                
+                # Job comparison
+                if target_role_val:
+                    job_results = search_jobs(target_role_val)
+                    if job_results:
+                        comparison = compare_to_job_requirements(
+                            analysis.get("sections", {}),
+                            job_results[0]
+                        )
+                        if comparison:
+                            st.markdown("### 📊 Job Fit Analysis")
+                            st.markdown(f"**Match: {comparison.get('match_percentage', 0)}%**")
+                            if comparison.get("skill_overlap"):
+                                st.markdown(f"✅ Matching skills: {', '.join(comparison['skill_overlap'][:8])}")
+                            if comparison.get("missing_skills"):
+                                st.markdown(f"❌ Missing skills: {', '.join(comparison['missing_skills'][:8])}")
+                            st.markdown(f"💡 {comparison.get('recommendation', '')}")
+            else:
+                st.warning("Could not extract sufficient text from PDF. Please ensure the PDF contains readable text.")
+        except Exception as e:
+            st.error(f"Error processing resume: {str(e)[:200]}")
+
+
+# ==========================================
+# 10. 📊 ADMIN PORTAL — PREDICTIVE ANALYTICS
+# ==========================================
+if st.session_state.get("admin_mode", False):
+    st.markdown("---")
+    st.markdown("## 📊 Institutional Admin Portal — Dropout Risk Analytics")
+    st.caption("🔒 Authenticated access | Predictive student analytics powered by J&K EduSetu")
+    
+    # Generate demo cohort
+    if "admin_cohort" not in st.session_state:
+        st.session_state.admin_cohort = simulate_demo_cohort(50)
+    
+    cohort = st.session_state.admin_cohort
+    analytics = get_cohort_analytics(cohort)
+    
+    # Overview cards
+    admin_c1, admin_c2, admin_c3, admin_c4 = st.columns(4)
+    with admin_c1:
+        st.metric("👥 Total Students", analytics["total_students"])
+    with admin_c2:
+        at_risk = analytics["risk_distribution"].get("High", 0) + analytics["risk_distribution"].get("Critical", 0)
+        st.metric("⚠️ At-Risk Students", at_risk, delta=f"-{at_risk}" if at_risk > 0 else "0", delta_color="inverse")
+    with admin_c3:
+        st.metric("📊 Avg CGPA", f"{analytics['avg_cgpa']:.2f}")
+    with admin_c4:
+        st.metric("🎓 Scholarship Rate", f"{analytics.get('scholarship_rate', 0):.0f}%")
+    
+    # Risk distribution
+    st.markdown("### Risk Distribution")
+    risk_dist = analytics["risk_distribution"]
+    dist_cols = st.columns(4)
+    colors = {"Low": "🟢", "Medium": "🟡", "High": "🟠", "Critical": "🔴"}
+    for i, (cat, count) in enumerate(risk_dist.items()):
+        with dist_cols[i]:
+            st.markdown(f"{colors.get(cat, '')} **{cat}**: {count} students")
+    
+    # Bar chart
+    st.bar_chart(risk_dist)
+    
+    # Priority alerts
+    alerts = get_priority_alerts(cohort)
+    if alerts:
+        st.markdown(f"### 🚨 Priority Alerts ({len(alerts)} students)")
+        for alert in alerts[:10]:
+            student = alert.get("student", alert)
+            risk = alert.get("risk_result", {})
+            name = student.get("name", "Unknown")
+            program = student.get("program", "")
+            risk_score = risk.get("total_score", 0)
+            risk_cat = risk.get("risk_category", "Unknown")
+            risk_color = risk.get("risk_color", "⚪")
+            
+            with st.expander(f"{risk_color} {name} — {program} | Risk: {risk_score:.0f}/100 ({risk_cat})"):
+                st.markdown(get_student_summary(student))
+                interventions = alert.get("interventions", generate_intervention_plan(student, risk))
+                if interventions:
+                    st.markdown("**📋 Intervention Plan:**")
+                    for iv in interventions[:5]:
+                        if isinstance(iv, dict):
+                            st.caption(f"{iv.get('icon', '•')} [{iv.get('priority', '')}] {iv.get('action', str(iv))} — {iv.get('responsible', '')} ({iv.get('timeline', '')})")
+                        else:
+                            st.caption(f"• {iv}")
+    
+    # Student search
+    st.markdown("### 🔍 Search Students")
+    student_search = st.text_input("Search by name, ID, district, or program...", key="admin_search")
+    if student_search:
+        found = search_students(cohort, student_search)
+        st.markdown(f"Found {len(found)} students:")
+        for s in found[:10]:
+            risk_r = calculate_risk_score(s)
+            st.caption(f"{risk_r.get('risk_color', '⚪')} **{s['name']}** | {s['program']} | {s['institution']} | CGPA: {s['cgpa']} | Risk: {risk_r['total_score']:.0f}")
+    
+    # Export report
+    if st.button("📥 Export Full Cohort Report", key="btn_export_cohort"):
+        report_text = export_cohort_report(analytics)
+        st.markdown(report_text)
+    
+    st.markdown("---")
+
+
+# ==========================================
+# 11. INTERACTIVE CHAT HISTORY DISPLAY
 # ==========================================
 st.markdown("### 💬 Advisor Conversation")
 
