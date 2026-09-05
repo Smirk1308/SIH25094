@@ -8,28 +8,28 @@ import os
 import streamlit as st
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-# Model tier definitions
+# Model tier definitions (aligned with standard Google AI Studio free tier limits)
 MODELS = {
     "simple": {
         "id": "gemini-2.0-flash",
-        "max_tokens": 1500,
+        "max_tokens": 1024,
         "label": "Fast",
         "emoji": "⚡",
         "daily_limit": 1500,
     },
     "medium": {
-        "id": "gemini-3.7-flash",
-        "max_tokens": 2048,
+        "id": "gemini-2.0-flash",
+        "max_tokens": 1500,
         "label": "Standard",
         "emoji": "🎯",
-        "daily_limit": 500,
+        "daily_limit": 1500,
     },
     "complex": {
-        "id": "gemini-3.8-flash",
-        "max_tokens": 4096,
+        "id": "gemini-1.5-flash",
+        "max_tokens": 2048,
         "label": "Deep Analysis",
         "emoji": "🧠",
-        "daily_limit": 200,
+        "daily_limit": 1500,
     },
 }
 
@@ -122,15 +122,13 @@ def get_llm(query: str = "", history_length: int = 0):
     if not google_api_key:
         google_api_key = os.getenv("GOOGLE_API_KEY", "").strip()
 
-    # Build LLM — 3.8 Flash gets thinking enabled, others don't
+    # Build LLM
     llm_kwargs = dict(
         model=model_cfg["id"],
         google_api_key=google_api_key or "dummy_key",
         max_output_tokens=model_cfg["max_tokens"],
         temperature=0.2,
     )
-    if tier == "complex":
-        llm_kwargs["thinking"] = "medium"
 
     return ChatGoogleGenerativeAI(**llm_kwargs)
 

@@ -73,6 +73,9 @@ def is_followup(query: str, messages: list) -> bool:
     has_history = len(messages) >= 2 if messages else False
     return bool(has_signal and has_history)
 
+# In-memory query response cache to eliminate duplicate API consumption
+_RESPONSE_CACHE: Dict[str, Dict[str, Any]] = {}
+
 # Singleton cached embedding function to slash cold start latency
 _CACHED_EMBEDDING_FN = None
 
@@ -588,6 +591,17 @@ Instructions:
             prompt = self.build_prompt(query, context_chunks, history_str=history_str)
             exchanges_to_keep = 3
 
+        # Check in-memory cache for exact identical query (0 API tokens, 0ms)
+        cache_key = f"{query.strip().lower()}__{len(effective_history)}"
+        if not stream and cache_key in _RESPONSE_CACHE:
+            cached = _RESPONSE_CACHE[cache_key]
+            return {
+                "answer": cached["answer"],
+                "sources": cached["sources"],
+                "search_query": cached.get("search_query", search_query),
+                "model_used": f"{cached['model_used']} (⚡ Cached)"
+            }
+
         # Determine history length and route LLM using model_router
         history_length = len(effective_history)
         try:
@@ -653,6 +667,12 @@ Instructions:
                 else:
                     response = gemini_llm.invoke(messages)
                     content = response.content if hasattr(response, "content") else str(response)
+                    _RESPONSE_CACHE[cache_key] = {
+                        "answer": content,
+                        "sources": context_chunks,
+                        "search_query": search_query,
+                        "model_used": active_model_id
+                    }
                     return {
                         "answer": content,
                         "sources": context_chunks,
