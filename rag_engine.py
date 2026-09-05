@@ -42,6 +42,38 @@ TOKENIZER_ENCODING = "cl100k_base"
 # Smart Model Router import for complexity-based tier selection
 from model_router import get_llm, render_query_info
 
+SYSTEM_PROMPTS = {
+    "simple": (
+        "You are a concise career advisor for J&K students. "
+        "Answer in 3-5 bullet points maximum. "
+        "Cite sources inline. No introductory sentences."
+    ),
+    "medium": (
+        "You are a career advisor for J&K students. "
+        "Answer clearly in under 150 words. Use short sections only if needed. "
+        "Always cite sources. Skip preamble."
+    ),
+    "complex": (
+        "You are a career advisor for J&K students doing a full profile analysis. "
+        "Be thorough but efficient. Maximum 250 words. "
+        "Use numbered sections. Cite every claim. "
+        "End with a 3-point action plan only."
+    ),
+}
+
+FOLLOWUP_SIGNALS = [
+    "concise", "shorter", "summarize", "only", "just give",
+    "explain the first", "tell me more about", "elaborate on",
+    "what about the", "and the second", "previous answer",
+    "make it shorter", "simplify", "brief",
+]
+
+def is_followup(query: str, messages: list) -> bool:
+    q = query.lower()
+    has_signal = any(s in q for s in FOLLOWUP_SIGNALS)
+    has_history = len(messages) >= 2 if messages else False
+    return bool(has_signal and has_history)
+
 # Singleton cached embedding function to slash cold start latency
 _CACHED_EMBEDDING_FN = None
 
@@ -507,43 +539,62 @@ Instructions:
         stream: bool = False
     ) -> Any:
         """Retrieve context and generate answer via Gemini 2.0 Flash (primary) with Groq (fallback)."""
-        # 1. Contextualize query if there is conversation history
-        client = None
-        if api_key:
-            try:
-                client = Groq(api_key=api_key)
-            except Exception:
-                pass
-        search_query = self.contextualize_query(query, history, client=client, model=model)
-        
-        # 2. Retrieve top-k context chunks using the search query
-        context_chunks = self.retrieve(search_query, top_k=top_k)
+        # Resolve conversation history
+        effective_history = history
+        if effective_history is None and hasattr(st, "session_state"):
+            effective_history = st.session_state.get("messages", [])
+        if effective_history is None:
+            effective_history = []
 
-        # 3. Format the last 3 exchanges (up to 6 messages) as conversation history
-        history_str = self.format_conversation_history(history, max_exchanges=3)
-        prompt = self.build_prompt(query, context_chunks, history_str=history_str)
+        # Check if query is a follow-up or reformatting request
+        if is_followup(query, effective_history):
+            search_query = query
+            # Extract last assistant message for context instead of querying ChromaDB
+            last_assistant_content = ""
+            for turn in reversed(effective_history):
+                if turn.get("role") == "assistant":
+                    last_assistant_content = turn.get("content", "").strip()
+                    break
 
-        # 4. Assemble LangChain messages
-        messages = [
-            SystemMessage(
-                content=(
-                    "You are a helpful, authoritative, and encouraging Career Advisor. "
-                    "You provide actionable career guidance, resume suggestions, interview strategies, "
-                    "and technical roadmaps based on provided documentation and industry standards. "
-                    "Maintain continuity with the ongoing conversation."
-                )
-            )
-        ]
+            if last_assistant_content:
+                context_chunks = [{
+                    "id": "prev_assistant_context",
+                    "text": last_assistant_content,
+                    "source": "Previous Assistant Response",
+                    "page": 1,
+                    "metadata": {"source": "Previous Assistant Response", "page": 1}
+                }]
+            else:
+                context_chunks = []
 
-        if history:
-            recent_turns = [turn for turn in history if turn.get("role") in ["user", "assistant"]][-6:]
-            for turn in recent_turns:
-                if turn.get("role") == "user":
-                    messages.append(HumanMessage(content=turn.get("content", "")))
-                else:
-                    messages.append(AIMessage(content=turn.get("content", "")))
+            # Pass only the last 2 exchanges as context to the LLM
+            history_str = self.format_conversation_history(effective_history, max_exchanges=2)
+            prompt = self.build_prompt(query, context_chunks, history_str=history_str)
+            exchanges_to_keep = 2
+        else:
+            # 1. Contextualize query if there is conversation history
+            client = None
+            if api_key:
+                try:
+                    client = Groq(api_key=api_key)
+                except Exception:
+                    pass
+            search_query = self.contextualize_query(query, effective_history, client=client, model=model)
+            
+            # 2. Retrieve top-k context chunks using the search query
+            context_chunks = self.retrieve(search_query, top_k=top_k)
 
-        messages.append(HumanMessage(content=prompt))
+            # 3. Format the last 3 exchanges (up to 6 messages) as conversation history
+            history_str = self.format_conversation_history(effective_history, max_exchanges=3)
+            prompt = self.build_prompt(query, context_chunks, history_str=history_str)
+            exchanges_to_keep = 3
+
+        # Determine history length and route LLM using model_router
+        history_length = len(effective_history)
+        try:
+            render_query_info(query, history_length)
+        except Exception:
+            pass
 
         # Check for Gemini API Key
         google_api_key = None
@@ -566,18 +617,28 @@ Instructions:
             if not groq_api_key:
                 groq_api_key = os.getenv("GROQ_API_KEY", "").strip()
 
-        # Determine history length and route LLM using model_router
-        history_length = len(st.session_state.get("messages", [])) if hasattr(st, "session_state") else 0
-        try:
-            render_query_info(query, history_length)
-        except Exception:
-            pass
+        def build_messages(tier: str):
+            system_content = SYSTEM_PROMPTS.get(tier, SYSTEM_PROMPTS["simple"])
+            msgs = [SystemMessage(content=system_content)]
+            if effective_history:
+                max_msgs = exchanges_to_keep * 2
+                recent_turns = [turn for turn in effective_history if turn.get("role") in ["user", "assistant"]][-max_msgs:]
+                for turn in recent_turns:
+                    if turn.get("role") == "user":
+                        msgs.append(HumanMessage(content=turn.get("content", "")))
+                    else:
+                        msgs.append(AIMessage(content=turn.get("content", "")))
+            msgs.append(HumanMessage(content=prompt))
+            return msgs
 
         # 1. Attempt Primary: Gemini via model_router
         if google_api_key:
             try:
                 gemini_llm = get_llm(query, history_length)
                 active_model_id = st.session_state.get("active_model_id", "gemini-2.0-flash") if hasattr(st, "session_state") else "gemini-2.0-flash"
+                active_tier = st.session_state.get("active_model_tier", "simple") if hasattr(st, "session_state") else "simple"
+                messages = build_messages(active_tier)
+
                 if stream:
                     response_stream = gemini_llm.stream(messages)
                     def stream_generator() -> Generator[str, None, None]:
@@ -606,6 +667,9 @@ Instructions:
 
         # 2. Attempt Fallback: Groq
         if groq_api_key:
+            active_tier = st.session_state.get("active_model_tier", "simple") if hasattr(st, "session_state") else "simple"
+            messages = build_messages(active_tier)
+
             groq_llm = ChatGroq(
                 api_key=groq_api_key,
                 model=model,
