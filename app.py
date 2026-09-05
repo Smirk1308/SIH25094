@@ -37,7 +37,25 @@ def get_groq_api_key() -> str:
         pass
     return os.getenv("GROQ_API_KEY", os.getenv("groq_api_key", "")).strip()
 
+# Retrieve GOOGLE_API_KEY securely from st.secrets or environment
+def get_google_api_key() -> str:
+    try:
+        if "GOOGLE_API_KEY" in st.secrets:
+            return str(st.secrets["GOOGLE_API_KEY"]).strip()
+        if "google_api_key" in st.secrets:
+            return str(st.secrets["google_api_key"]).strip()
+        for val in st.secrets.values():
+            if isinstance(val, dict):
+                if "GOOGLE_API_KEY" in val:
+                    return str(val["GOOGLE_API_KEY"]).strip()
+                if "google_api_key" in val:
+                    return str(val["google_api_key"]).strip()
+    except Exception:
+        pass
+    return os.getenv("GOOGLE_API_KEY", os.getenv("google_api_key", "")).strip()
+
 groq_api_key = get_groq_api_key()
+google_api_key = get_google_api_key()
 groq_client = Groq(api_key=groq_api_key) if groq_api_key else None
 
 def get_best_groq_model(client):
@@ -772,10 +790,10 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                     "search_query": current_prompt
                 })
 
-        elif not groq_api_key:
-            # Zero-downtime Fallback: Serve offline match or local Chroma chunks when API key is missing
+        elif not google_api_key and not groq_api_key:
+            # Zero-downtime Fallback: Serve offline match or local Chroma chunks when API keys are missing
             with st.chat_message("assistant"):
-                render_error_card(Exception("groq.AuthenticationError: 401 Missing GROQ_API_KEY in st.secrets"))
+                render_error_card(Exception("AuthenticationError: 401 Missing GOOGLE_API_KEY / GROQ_API_KEY in st.secrets"))
                 if offline_match:
                     full_response = offline_match["answer"]
                     st.markdown(full_response)
@@ -798,7 +816,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                         model_used = "⚡ 2G Local ChromaDB Fallback"
                         portal_url = ""
                     else:
-                        full_response = "Please configure your `GROQ_API_KEY` in Streamlit Secrets or switch to ⚡ 2G Ultra-Lite mode."
+                        full_response = "Please configure your `GOOGLE_API_KEY` (or `GROQ_API_KEY`) in Streamlit Secrets or switch to ⚡ 2G Ultra-Lite mode."
                         st.markdown(full_response)
                         retrieved_sources = []
                         model_used = "Offline System"
