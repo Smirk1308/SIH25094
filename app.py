@@ -1,9 +1,9 @@
 """
-Streamlit Web Application for Margdarshak J&K - AI Career Advisor.
+Streamlit Web Application for J&K EduSetu - "Your Bridge to Education & Opportunities".
 High-End Competitive UI with:
 1. 🎨 Modern Glassmorphism & Plus Jakarta Sans typography.
 2. ⚡ 2G Offline & Instant Query Engine (<10ms latency, zero API calls).
-3. 🌐 AI Cloud Mode with Groq Llama 3 & ChromaDB vector search.
+3. 🌐 AI Cloud Mode with Gemini & Groq & ChromaDB vector search.
 4. 🤖 Smart Auto-Detect with Zero-Downtime Fallback.
 5. 🎯 3-Question Instant Scholarship & Career Eligibility Matcher.
 6. 🗂️ Interactive Category Prompt Explorer (Scholarships, Medical, Engineering, Careers).
@@ -73,7 +73,7 @@ def get_best_groq_model(client):
 
 # Page configuration
 st.set_page_config(
-    page_title="PathSeva | AI Career Advisor",
+    page_title="J&K EduSetu | Your Bridge to Education & Opportunities",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -388,8 +388,11 @@ with st.sidebar:
     st.sidebar.image("assets/logo.png", width=110)
     st.sidebar.markdown("""
 <div style="text-align:center; padding:4px 0 12px;">
-  <div style="color:white;font-size:18px;font-weight:800;letter-spacing:1px;">
-    PathSeva
+  <div style="color:white;font-size:18px;font-weight:800;letter-spacing:0.5px;">
+    J&K EduSetu
+  </div>
+  <div style="color:#F5A623;font-size:10px;font-weight:700;margin-top:2px;">
+    Your Bridge to Education & Opportunities
   </div>
   <div style="color:#AEC6D0;font-size:10px;margin-top:2px;">
     by Team Error404 · NIE Mysuru
@@ -479,11 +482,14 @@ st.markdown("""
            letter-spacing:2px;margin-bottom:4px;">
         SIH 2026 · SIH25094 · TEAM ERROR404
       </div>
-      <div style="color:white;font-size:22px;font-weight:800;line-height:1.2;">
-        PathSeva
+      <div style="color:white;font-size:24px;font-weight:800;line-height:1.2;">
+        J&K EduSetu
       </div>
-      <div style="color:#AEC6D0;font-size:13px;margin-top:4px;">
-        Career & Education Advisor for J&K · Free · Cited · 2G-Ready
+      <div style="color:#F5A623;font-size:13px;font-weight:700;margin-top:2px;">
+        Your Bridge to Education & Opportunities
+      </div>
+      <div style="color:#AEC6D0;font-size:12px;margin-top:3px;">
+        AI Career & Education Advisory for Jammu & Kashmir · Verified Government Sources · 2G-Ready
       </div>
     </div>
   </div>

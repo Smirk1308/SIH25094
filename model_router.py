@@ -1,5 +1,5 @@
 """
-Smart model router for PathSeva.
+Smart model router for J&K EduSetu ("Your Bridge to Education & Opportunities").
 Routes queries to the appropriate Gemini model based on complexity
 while tracking per-model usage to avoid hitting rate limits.
 """
@@ -12,21 +12,21 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 MODELS = {
     "simple": {
         "id": "gemini-2.0-flash",
-        "max_tokens": 300,
+        "max_tokens": 1500,
         "label": "Fast",
         "emoji": "⚡",
         "daily_limit": 1500,
     },
     "medium": {
         "id": "gemini-3.7-flash",
-        "max_tokens": 512,
+        "max_tokens": 2048,
         "label": "Standard",
         "emoji": "🎯",
         "daily_limit": 500,
     },
     "complex": {
         "id": "gemini-3.8-flash",
-        "max_tokens": 1024,
+        "max_tokens": 4096,
         "label": "Deep Analysis",
         "emoji": "🧠",
         "daily_limit": 200,

@@ -1,5 +1,5 @@
 """
-Personalized Error Handling & Zero-Downtime Recovery System for Margdarshak J&K / PathSeva.
+Personalized Error Handling & Zero-Downtime Recovery System for J&K EduSetu ("Your Bridge to Education & Opportunities").
 Classifies runtime, API, network, and vector store exceptions (including Google Gemini and Groq)
 into human-friendly, actionable diagnostics with automatic 2G fallback options.
 """
@@ -93,7 +93,7 @@ class ErrorDiagnostic:
                 "title": "Network Timeout / Slow Connection Detected",
                 "description": (
                     "Cloud servers took too long to respond, typical on remote 2G/3G mountain connections. "
-                    "PathSeva has served your answer directly from local verified government documents."
+                    "J&K EduSetu has served your answer directly from local verified government documents."
                 ),
                 "action_steps": [
                     "Toggle **⚡ 2G Ultra-Lite (Offline)** in the sidebar to bypass cloud networks entirely.",
