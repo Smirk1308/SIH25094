@@ -11,21 +11,21 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 # Model tier definitions (aligned with standard Google AI Studio free tier limits)
 MODELS = {
     "simple": {
-        "id": "gemini-2.0-flash",
+        "id": "gemini-3.5-flash-lite",
         "max_tokens": 1024,
         "label": "Fast",
         "emoji": "⚡",
         "daily_limit": 1500,
     },
     "medium": {
-        "id": "gemini-2.0-flash",
+        "id": "gemini-flash-latest",
         "max_tokens": 1500,
         "label": "Standard",
         "emoji": "🎯",
         "daily_limit": 1500,
     },
     "complex": {
-        "id": "gemini-1.5-flash",
+        "id": "gemini-flash-latest",
         "max_tokens": 2048,
         "label": "Deep Analysis",
         "emoji": "🧠",

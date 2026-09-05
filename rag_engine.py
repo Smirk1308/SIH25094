@@ -657,7 +657,14 @@ Instructions:
                     def stream_generator() -> Generator[str, None, None]:
                         for chunk in response_stream:
                             if hasattr(chunk, "content") and chunk.content:
-                                yield chunk.content
+                                if isinstance(chunk.content, str):
+                                    yield chunk.content
+                                elif isinstance(chunk.content, list):
+                                    for part in chunk.content:
+                                        if isinstance(part, str):
+                                            yield part
+                                        elif isinstance(part, dict) and "text" in part and part["text"]:
+                                            yield part["text"]
                     return {
                         "stream": stream_generator(),
                         "sources": context_chunks,
@@ -666,7 +673,22 @@ Instructions:
                     }
                 else:
                     response = gemini_llm.invoke(messages)
-                    content = response.content if hasattr(response, "content") else str(response)
+                    if hasattr(response, "content"):
+                        if isinstance(response.content, str):
+                            content = response.content
+                        elif isinstance(response.content, list):
+                            text_parts = []
+                            for part in response.content:
+                                if isinstance(part, str):
+                                    text_parts.append(part)
+                                elif isinstance(part, dict) and "text" in part and part["text"]:
+                                    text_parts.append(part["text"])
+                            content = "".join(text_parts) if text_parts else str(response.content)
+                        else:
+                            content = str(response.content)
+                    else:
+                        content = str(response)
+
                     _RESPONSE_CACHE[cache_key] = {
                         "answer": content,
                         "sources": context_chunks,
