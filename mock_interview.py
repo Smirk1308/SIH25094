@@ -399,7 +399,18 @@ Provide your evaluation in STRICT JSON format with the following structure:
         ]
         
         response = llm.invoke(messages)
-        content = response.content
+        if isinstance(response.content, str):
+            content = response.content
+        elif isinstance(response.content, list):
+            parts = []
+            for p in response.content:
+                if isinstance(p, str):
+                    parts.append(p)
+                elif isinstance(p, dict) and "text" in p:
+                    parts.append(p["text"])
+            content = "".join(parts)
+        else:
+            content = str(response.content)
         
         # Clean up JSON if necessary
         content = content.strip()
@@ -410,7 +421,7 @@ Provide your evaluation in STRICT JSON format with the following structure:
         if content.endswith("```"):
             content = content[:-3]
             
-        result = json.loads(content)
+        result = json.loads(content.strip())
         
         # Calculate total
         total = sum(result.get("scores", {}).values())

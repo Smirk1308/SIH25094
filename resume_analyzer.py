@@ -287,7 +287,17 @@ def get_ai_review(text: str, target_role: str = None) -> str:
         
         hum_msg = HumanMessage(content=prompt)
         response = llm.invoke([sys_msg, hum_msg])
-        return response.content
+        if isinstance(response.content, str):
+            return response.content
+        elif isinstance(response.content, list):
+            parts = []
+            for p in response.content:
+                if isinstance(p, str):
+                    parts.append(p)
+                elif isinstance(p, dict) and "text" in p:
+                    parts.append(p["text"])
+            return "".join(parts)
+        return str(response.content)
     except Exception as e:
         print(f"Error in get_ai_review: {e}")
         return "The AI review is currently unavailable. Please refer to the automated scoring and suggestions provided above."

@@ -25,7 +25,7 @@ MODELS = {
         "daily_limit": 1500,
     },
     "complex": {
-        "id": "gemini-flash-latest",
+        "id": "gemini-3.7-flash",
         "max_tokens": 2048,
         "label": "Deep Analysis",
         "emoji": "🧠",
