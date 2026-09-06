@@ -596,9 +596,9 @@ with st.sidebar:
     st.subheader("📶 Network & Engine Mode")
     network_mode = st.radio(
         "Select Operating Mode",
-        options=["🤖 Smart Auto-Detect", "⚡ 2G Ultra-Lite (Offline)", "🌐 AI Cloud (Llama 3)"],
+        options=["🤖 Smart Auto-Detect", "⚡ 2G Ultra-Lite (Offline)", "🌐 AI Cloud (Gemini / Groq)"],
         index=0,
-        help="⚡ 2G Ultra-Lite: Sub-10ms instant responses, zero external API calls. 🌐 AI Cloud: Deep conversational generation."
+        help="⚡ 2G Ultra-Lite: Sub-10ms instant responses, zero external API calls. 🌐 AI Cloud: Deep conversational generation with Gemini."
     )
 
     # Visual Mode Status Indicator
@@ -607,9 +607,9 @@ with st.sidebar:
             '<div class="status-pill status-pill-2g"><span class="pulse-radar"></span>⚡ 2G Offline Mode (0ms Latency)</div>',
             unsafe_allow_html=True
         )
-    elif network_mode == "🌐 AI Cloud (Llama 3)":
+    elif network_mode == "🌐 AI Cloud (Gemini / Groq)":
         st.markdown(
-            f'<div class="status-pill status-pill-cloud">🌐 Groq Cloud: {st.session_state.selected_model}</div>',
+            f'<div class="status-pill status-pill-cloud">🌐 AI Cloud: {st.session_state.get("active_model_id", "gemini-3.5-flash-lite")}</div>',
             unsafe_allow_html=True
         )
     else:

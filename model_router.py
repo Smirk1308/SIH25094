@@ -75,6 +75,10 @@ def _init_usage():
             st.session_state.model_usage = {
                 tier: 0 for tier in MODELS
             }
+        if "active_model_tier" not in st.session_state:
+            st.session_state.active_model_tier = "simple"
+        if "active_model_id" not in st.session_state:
+            st.session_state.active_model_id = MODELS["simple"]["id"]
 
 
 def _get_fallback_tier(tier: str) -> str:
@@ -137,7 +141,7 @@ def render_model_badge():
     """Render the active model indicator in the sidebar."""
     _init_usage()
     tier = st.session_state.get("active_model_tier", "simple") if hasattr(st, "session_state") else "simple"
-    model_id = st.session_state.get("active_model_id", "gemini-2.0-flash") if hasattr(st, "session_state") else "gemini-2.0-flash"
+    model_id = st.session_state.get("active_model_id", MODELS["simple"]["id"]) if hasattr(st, "session_state") else MODELS["simple"]["id"]
     cfg = MODELS.get(tier, MODELS["simple"])
 
     usage_lines = []

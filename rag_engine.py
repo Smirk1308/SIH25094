@@ -648,7 +648,7 @@ Instructions:
         if google_api_key:
             try:
                 gemini_llm = get_llm(query, history_length)
-                active_model_id = st.session_state.get("active_model_id", "gemini-2.0-flash") if hasattr(st, "session_state") else "gemini-2.0-flash"
+                active_model_id = st.session_state.get("active_model_id", "gemini-3.5-flash-lite") if hasattr(st, "session_state") else "gemini-3.5-flash-lite"
                 active_tier = st.session_state.get("active_model_tier", "simple") if hasattr(st, "session_state") else "simple"
                 messages = build_messages(active_tier)
 
