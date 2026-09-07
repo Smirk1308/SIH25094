@@ -18,13 +18,11 @@ from typing import List, Dict, Any, Optional, Generator
 from pypdf import PdfReader
 import tiktoken
 import chromadb
-from chromadb.utils import embedding_functions
+from chromadb.api.types import EmbeddingFunction, Documents, Embeddings
 from groq import Groq
 import streamlit as st
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_groq import ChatGroq
-import google.api_core.exceptions as google_exceptions
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from google import genai
+from google.genai import types
 
 # Default Directory Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -32,7 +30,7 @@ DOCS_DIR = os.path.join(BASE_DIR, "docs")
 CHROMA_DIR = os.path.join(BASE_DIR, "chroma_db")
 COLLECTION_NAME = "career_advisor_docs"
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
-DEFAULT_GROQ_MODEL = "llama3-8b-8192"
+DEFAULT_GROQ_MODEL = "qwen/qwen3.8-27b"
 
 # Token Splitting Settings
 CHUNK_SIZE = 300
@@ -40,7 +38,7 @@ CHUNK_OVERLAP = 50
 TOKENIZER_ENCODING = "cl100k_base"
 
 # Smart Model Router import for complexity-based tier selection
-from model_router import get_llm, render_query_info
+from model_router import get_routed_model_info, render_query_info
 
 SYSTEM_PROMPTS = {
     "simple": (
@@ -76,6 +74,40 @@ def is_followup(query: str, messages: list) -> bool:
 # In-memory query response cache to eliminate duplicate API consumption
 _RESPONSE_CACHE: Dict[str, Dict[str, Any]] = {}
 
+class LazySentenceTransformerEmbeddingFunction(EmbeddingFunction[Documents]):
+    """ChromaDB-compatible lazy embedding function that delays sentence_transformers & torch loading until first retrieval."""
+    def __init__(self, model_name: str = EMBEDDING_MODEL_NAME):
+        self.model_name = model_name
+        self._fn = None
+
+    def _get_fn(self):
+        if self._fn is None:
+            os.environ["HF_HUB_OFFLINE"] = "1"
+            os.environ["TRANSFORMERS_OFFLINE"] = "1"
+            os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+            os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
+            os.environ["TOKENIZERS_PARALLELISM"] = "false"
+            from chromadb.utils import embedding_functions
+            self._fn = embedding_functions.SentenceTransformerEmbeddingFunction(
+                model_name=self.model_name
+            )
+        return self._fn
+
+    def __call__(self, input: Documents) -> Embeddings:
+        return self._get_fn()(input)
+
+    def name(self) -> str:
+        return "sentence_transformer"
+
+    def default_space(self) -> str:
+        return "cosine"
+
+    def supported_spaces(self) -> list:
+        return ["cosine", "l2", "ip"]
+
+    def get_config(self) -> dict:
+        return {"model_name": self.model_name}
+
 # Singleton cached embedding function to slash cold start latency
 _CACHED_EMBEDDING_FN = None
 
@@ -83,10 +115,7 @@ def get_embedding_function():
     """Cached singleton embedding function preventing model reload overhead."""
     global _CACHED_EMBEDDING_FN
     if _CACHED_EMBEDDING_FN is None:
-        os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
-        os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
-        os.environ["TOKENIZERS_PARALLELISM"] = "false"
-        _CACHED_EMBEDDING_FN = embedding_functions.SentenceTransformerEmbeddingFunction(
+        _CACHED_EMBEDDING_FN = LazySentenceTransformerEmbeddingFunction(
             model_name=EMBEDDING_MODEL_NAME
         )
     return _CACHED_EMBEDDING_FN
@@ -154,10 +183,30 @@ class RAGEngine:
         # Cached HuggingFace all-MiniLM-L6-v2 embedding function
         self.embedding_fn = get_embedding_function()
         
+        # Persistent clients
+        self._genai_client = None
+        self._current_genai_key = None
+        self._groq_client = None
+        self._current_groq_key = None
+
         # Persistent ChromaDB client and collection
         self.chroma_client = None
         self.collection = None
         self._ensure_collection()
+
+    def get_genai_client(self, api_key: str) -> genai.Client:
+        """Cache and return persistent Google GenAI client to prevent premature closure."""
+        if self._genai_client is None or getattr(self, "_current_genai_key", None) != api_key:
+            self._genai_client = genai.Client(api_key=api_key)
+            self._current_genai_key = api_key
+        return self._genai_client
+
+    def get_groq_client(self, api_key: str) -> Groq:
+        """Cache and return persistent Groq client."""
+        if self._groq_client is None or getattr(self, "_current_groq_key", None) != api_key:
+            self._groq_client = Groq(api_key=api_key)
+            self._current_groq_key = api_key
+        return self._groq_client
 
     def _ensure_collection(self):
         """Ensure ChromaDB client and collection handles are healthy and synchronized."""
@@ -436,41 +485,26 @@ class RAGEngine:
         self,
         query: str,
         history: Optional[List[Dict[str, Any]]],
-        client: Groq,
+        client: Optional[Any] = None,
         model: str = DEFAULT_GROQ_MODEL
     ) -> str:
-        """Reformulate follow-up questions (e.g., 'what about scholarships for that?') into a standalone query using conversation history."""
+        """Fast contextual query formulation without blocking LLM round-trips."""
         if not history or len(history) < 2:
             return query
 
-        history_context = self.format_conversation_history(history, max_exchanges=3)
-        if history_context == "No previous conversation.":
+        pronouns = ["that", "it", "this", "these", "those", "same", "for this", "for that", "previous", "above", "he", "she", "they"]
+        q_words = query.lower().split()
+        needs_context = any(p in q_words for p in pronouns) or len(q_words) <= 3
+        if not needs_context:
             return query
 
-        condense_prompt = f"""Given the following conversation history between a user and a Career Advisor, and a follow-up question from the user, rephrase the follow-up question into a concise, standalone search query that includes all necessary context (such as the specific role, degree, skill, or field previously mentioned).
-
-Conversation History (Last 3 Exchanges):
-{history_context}
-
-Follow-up Question: {query}
-
-Instructions:
-- If the question contains pronouns or references like 'that', 'it', 'for this', 'for that', replace them with the concrete subject from the conversation.
-- Output ONLY the standalone search query. Do NOT answer the question.
-
-Standalone Query:"""
-
-        try:
-            resp = client.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": condense_prompt}],
-                max_tokens=60,
-                temperature=0.0
-            )
-            standalone = resp.choices[0].message.content.strip().strip('"\'')
-            return standalone if standalone else query
-        except Exception:
-            return query
+        last_user_turns = [t.get("content", "") for t in history if t.get("role") == "user"]
+        if last_user_turns:
+            last_q = last_user_turns[-1].strip()
+            # Clean last query to core keywords
+            clean_last = " ".join([w for w in last_q.split() if len(w) > 2][:8])
+            return f"{clean_last} {query}"
+        return query
 
     def build_prompt(self, query: str, context_chunks: List[Dict[str, Any]], history_str: str = "") -> str:
         """Construct the prompt combining retrieved context, conversation history, and user question."""
@@ -509,8 +543,9 @@ Instructions:
     @staticmethod
     def get_available_groq_models(api_key: str) -> List[str]:
         """Fetch active text generation models available for this Groq API key."""
+        fallback = ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b"]
         if not api_key:
-            return ["llama3-8b-8192", "llama-3.3-70b-versatile", "llama3-70b-8192", "mixtral-8x7b-32768", "gemma2-9b-it"]
+            return fallback
         try:
             client = Groq(api_key=api_key)
             model_list = client.models.list()
@@ -518,18 +553,18 @@ Instructions:
             for m in model_list.data:
                 model_id = m.id
                 # Filter out whisper, vision-preview, embedding, and safety guard models
-                if any(excluded in model_id.lower() for excluded in ["whisper", "guard", "embed", "safet"]):
+                if any(excluded in model_id.lower() for excluded in ["whisper", "guard", "embed", "safet", "vision", "tool"]):
                     continue
                 active_models.append(model_id)
             
-            # Prioritize llama3-8b-8192 if present, otherwise sort
-            if "llama3-8b-8192" in active_models:
-                active_models.remove("llama3-8b-8192")
-                active_models.insert(0, "llama3-8b-8192")
+            # Prioritize qwen/qwen3.8-27b if present
+            if "qwen/qwen3.8-27b" in active_models:
+                active_models.remove("qwen/qwen3.8-27b")
+                active_models.insert(0, "qwen/qwen3.8-27b")
             
-            return active_models if active_models else ["llama3-8b-8192", "llama-3.3-70b-versatile", "llama3-70b-8192"]
+            return active_models if active_models else fallback
         except Exception:
-            return ["llama3-8b-8192", "llama-3.3-70b-versatile", "llama3-70b-8192", "mixtral-8x7b-32768", "gemma2-9b-it"]
+            return fallback
 
     def generate_answer(
         self,
@@ -630,41 +665,43 @@ Instructions:
             if not groq_api_key:
                 groq_api_key = os.getenv("GROQ_API_KEY", "").strip()
 
-        def build_messages(tier: str):
-            system_content = SYSTEM_PROMPTS.get(tier, SYSTEM_PROMPTS["simple"])
-            msgs = [SystemMessage(content=system_content)]
-            if effective_history:
-                max_msgs = exchanges_to_keep * 2
-                recent_turns = [turn for turn in effective_history if turn.get("role") in ["user", "assistant"]][-max_msgs:]
-                for turn in recent_turns:
-                    if turn.get("role") == "user":
-                        msgs.append(HumanMessage(content=turn.get("content", "")))
-                    else:
-                        msgs.append(AIMessage(content=turn.get("content", "")))
-            msgs.append(HumanMessage(content=prompt))
-            return msgs
-
-        # 1. Attempt Primary: Gemini via model_router
+        # 1. Attempt Primary: Gemini via Google GenAI SDK (Sub-second TTFT, multilingual)
         if google_api_key:
             try:
-                gemini_llm = get_llm(query, history_length)
-                active_model_id = st.session_state.get("active_model_id", "gemini-3.5-flash-lite") if hasattr(st, "session_state") else "gemini-3.5-flash-lite"
-                active_tier = st.session_state.get("active_model_tier", "simple") if hasattr(st, "session_state") else "simple"
-                messages = build_messages(active_tier)
+                routed_cfg = get_routed_model_info(query, history_length)
+                active_model_id = routed_cfg["model_id"]
+                active_tier = routed_cfg["tier"]
+                system_content = SYSTEM_PROMPTS.get(active_tier, SYSTEM_PROMPTS["simple"])
+
+                client_genai = self.get_genai_client(google_api_key)
+
+                # Format conversation history for google.genai chat
+                genai_history = []
+                if effective_history:
+                    max_msgs = exchanges_to_keep * 2
+                    recent_turns = [turn for turn in effective_history if turn.get("role") in ["user", "assistant"]][-max_msgs:]
+                    for turn in recent_turns:
+                        role = "user" if turn.get("role") == "user" else "model"
+                        genai_history.append(
+                            types.Content(role=role, parts=[types.Part.from_text(text=turn.get("content", ""))])
+                        )
+
+                chat = client_genai.chats.create(
+                    model=active_model_id,
+                    history=genai_history,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_content,
+                        temperature=0.3,
+                        max_output_tokens=routed_cfg.get("max_tokens", 1024),
+                    )
+                )
 
                 if stream:
-                    response_stream = gemini_llm.stream(messages)
+                    response_stream = chat.send_message_stream(prompt)
                     def stream_generator() -> Generator[str, None, None]:
                         for chunk in response_stream:
-                            if hasattr(chunk, "content") and chunk.content:
-                                if isinstance(chunk.content, str):
-                                    yield chunk.content
-                                elif isinstance(chunk.content, list):
-                                    for part in chunk.content:
-                                        if isinstance(part, str):
-                                            yield part
-                                        elif isinstance(part, dict) and "text" in part and part["text"]:
-                                            yield part["text"]
+                            if chunk.text:
+                                yield chunk.text
                     return {
                         "stream": stream_generator(),
                         "sources": context_chunks,
@@ -672,23 +709,8 @@ Instructions:
                         "model_used": active_model_id
                     }
                 else:
-                    response = gemini_llm.invoke(messages)
-                    if hasattr(response, "content"):
-                        if isinstance(response.content, str):
-                            content = response.content
-                        elif isinstance(response.content, list):
-                            text_parts = []
-                            for part in response.content:
-                                if isinstance(part, str):
-                                    text_parts.append(part)
-                                elif isinstance(part, dict) and "text" in part and part["text"]:
-                                    text_parts.append(part["text"])
-                            content = "".join(text_parts) if text_parts else str(response.content)
-                        else:
-                            content = str(response.content)
-                    else:
-                        content = str(response)
-
+                    response = chat.send_message(prompt)
+                    content = response.text or ""
                     _RESPONSE_CACHE[cache_key] = {
                         "answer": content,
                         "sources": context_chunks,
@@ -706,37 +728,54 @@ Instructions:
                 if not groq_api_key:
                     raise e
 
-        # 2. Attempt Fallback: Groq
+        # 2. Attempt Fallback: Groq (Direct Groq SDK with active qwen/qwen3.8-27b)
         if groq_api_key:
             active_tier = st.session_state.get("active_model_tier", "simple") if hasattr(st, "session_state") else "simple"
-            messages = build_messages(active_tier)
+            system_content = SYSTEM_PROMPTS.get(active_tier, SYSTEM_PROMPTS["simple"])
 
-            groq_llm = ChatGroq(
-                api_key=groq_api_key,
-                model=model,
-                max_tokens=2048,
-                temperature=0.4
-            )
+            groq_messages = [{"role": "system", "content": system_content}]
+            if effective_history:
+                max_msgs = exchanges_to_keep * 2
+                recent_turns = [turn for turn in effective_history if turn.get("role") in ["user", "assistant"]][-max_msgs:]
+                for turn in recent_turns:
+                    role = "user" if turn.get("role") == "user" else "assistant"
+                    groq_messages.append({"role": role, "content": turn.get("content", "")})
+            groq_messages.append({"role": "user", "content": prompt})
+
+            groq_client = self.get_groq_client(groq_api_key)
+            groq_model = model if model and not any(d in model for d in ["llama3-8b-8192", "llama-3.3-70b-versatile", "llama3-70b-8192"]) else DEFAULT_GROQ_MODEL
+
             if stream:
-                response_stream = groq_llm.stream(messages)
+                stream_resp = groq_client.chat.completions.create(
+                    model=groq_model,
+                    messages=groq_messages,
+                    max_tokens=1024,
+                    temperature=0.3,
+                    stream=True
+                )
                 def stream_generator_groq() -> Generator[str, None, None]:
-                    for chunk in response_stream:
-                        if hasattr(chunk, "content") and chunk.content:
-                            yield chunk.content
+                    for chunk in stream_resp:
+                        if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                            yield chunk.choices[0].delta.content
                 return {
                     "stream": stream_generator_groq(),
                     "sources": context_chunks,
                     "search_query": search_query,
-                    "model_used": f"{model} (Groq Fallback)"
+                    "model_used": f"{groq_model} (Groq Fallback)"
                 }
             else:
-                response = groq_llm.invoke(messages)
-                content = response.content if hasattr(response, "content") else str(response)
+                resp = groq_client.chat.completions.create(
+                    model=groq_model,
+                    messages=groq_messages,
+                    max_tokens=1024,
+                    temperature=0.3
+                )
+                content = resp.choices[0].message.content if resp.choices else ""
                 return {
                     "answer": content,
                     "sources": context_chunks,
                     "search_query": search_query,
-                    "model_used": f"{model} (Groq Fallback)"
+                    "model_used": f"{groq_model} (Groq Fallback)"
                 }
 
         raise ValueError("Neither GOOGLE_API_KEY nor GROQ_API_KEY is configured.")

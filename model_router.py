@@ -18,7 +18,7 @@ MODELS = {
         "daily_limit": 1500,
     },
     "medium": {
-        "id": "gemini-flash-latest",
+        "id": "gemini-3.5-flash",
         "max_tokens": 1500,
         "label": "Standard",
         "emoji": "🎯",
@@ -86,6 +86,31 @@ def _get_fallback_tier(tier: str) -> str:
     order = ["complex", "medium", "simple"]
     idx = order.index(tier)
     return order[idx + 1] if idx + 1 < len(order) else "simple"
+
+
+def get_routed_model_info(query: str = "", history_length: int = 0) -> dict:
+    """Return model tier, ID, max tokens, and metadata for direct google.genai client."""
+    _init_usage()
+    tier = classify_complexity(query, history_length)
+    while tier != "simple" and hasattr(st, "session_state"):
+        usage = st.session_state.model_usage.get(tier, 0)
+        limit = MODELS[tier]["daily_limit"]
+        if usage >= int(limit * 0.85):   # back off at 85% of limit
+            tier = _get_fallback_tier(tier)
+        else:
+            break
+    model_cfg = MODELS[tier]
+    if hasattr(st, "session_state"):
+        st.session_state.active_model_tier = tier
+        st.session_state.active_model_id = model_cfg["id"]
+        st.session_state.model_usage[tier] = st.session_state.model_usage.get(tier, 0) + 1
+    return {
+        "tier": tier,
+        "model_id": model_cfg["id"],
+        "max_tokens": model_cfg["max_tokens"],
+        "label": model_cfg["label"],
+        "emoji": model_cfg["emoji"],
+    }
 
 
 def get_llm(query: str = "", history_length: int = 0):

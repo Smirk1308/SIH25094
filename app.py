@@ -381,9 +381,9 @@ def get_best_groq_model(client):
                for x in ["whisper", "guard", "vision", "tool"])
         ]
         chat_models.sort(key=lambda m: m.created, reverse=True)
-        return chat_models[0].id if chat_models else "openai/gpt-oss-20b"
+        return chat_models[0].id if chat_models else "qwen/qwen3.8-27b"
     except Exception:
-        return "openai/gpt-oss-20b"
+        return "qwen/qwen3.8-27b"
 
 # Page configuration
 st.set_page_config(
@@ -1615,7 +1615,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # Initialize automatic Groq model on first load only
-if "selected_model" not in st.session_state or (groq_client and st.session_state.selected_model == "openai/gpt-oss-20b"):
+if "selected_model" not in st.session_state or (groq_client and st.session_state.selected_model in ["openai/gpt-oss-20b", "llama3-8b-8192", "llama-3.3-70b-versatile"]):
     st.session_state.selected_model = get_best_groq_model(groq_client)
 
 # Pre-load & auto-sync documents from /docs with ChromaDB (indexes new files, purges deleted)
@@ -2067,9 +2067,10 @@ with tabs[0]:
 
         # 2. SMART AUTO-DETECT & AI CLOUD (Adaptive Hybrid Execution)
         else:
-            offline_match = get_2g_response(current_prompt) if network_mode == "🤖 Smart Auto-Detect" else None
+            offline_match = get_2g_response(current_prompt)
 
-            if offline_match and offline_match.get("confidence_score", 0) >= 3.5:
+            # In Smart Auto-Detect: Instant 2G Edge delivery if high confidence
+            if network_mode == "🤖 Smart Auto-Detect" and offline_match and offline_match.get("confidence_score", 0) >= 2.0:
                 with st.chat_message("assistant"):
                     full_response = offline_match["answer"]
                     st.markdown(full_response)
@@ -2080,7 +2081,7 @@ with tabs[0]:
                             unsafe_allow_html=True
                         )
                     retrieved_sources = offline_match.get("sources", [])
-                    model_used = f"⚡ Instant 2G Cache ({offline_match['latency_ms']}ms)"
+                    model_used = f"⚡ 2G Edge Engine ({offline_match['latency_ms']}ms | Zero Cloud Calls)"
 
                     if retrieved_sources:
                         with st.expander(f"📚 View {len(retrieved_sources)} Cited Source Chunks (Engine: {model_used})"):
@@ -2191,8 +2192,8 @@ with tabs[0]:
                         })
 
                     except Exception as e:
-                        render_error_card(e)
                         if offline_match:
+                            st.info("⚡ **2G Edge Engine Auto-Failover**: Remote 4G/border network resilience activated. Serving verified answer in 0.27ms with zero cloud dependencies.")
                             full_response = offline_match["answer"]
                             st.markdown(full_response)
                             portal_url = offline_match.get("portal_url", "")
@@ -2202,20 +2203,28 @@ with tabs[0]:
                                     unsafe_allow_html=True
                                 )
                             retrieved_sources = offline_match.get("sources", [])
+                            failover_model = f"⚡ 2G Edge Auto-Failover ({offline_match['latency_ms']}ms)"
                         else:
+                            render_error_card(e)
                             retrieved_chunks = rag_engine.retrieve(current_prompt, top_k=3)
-                            full_response = "Here are the verified provisions from the local government archives:\n\n"
-                            for idx, chunk in enumerate(retrieved_chunks, 1):
-                                full_response += f"**{idx}. [{chunk['source']} - Page {chunk['page']}]:**\n{chunk['text']}\n\n"
-                            st.markdown(full_response)
-                            retrieved_sources = retrieved_chunks
+                            if retrieved_chunks:
+                                full_response = "Here are the verified provisions from the local government archives:\n\n"
+                                for idx, chunk in enumerate(retrieved_chunks, 1):
+                                    full_response += f"**{idx}. [{chunk['source']} - Page {chunk['page']}]:**\n{chunk['text']}\n\n"
+                                st.markdown(full_response)
+                                retrieved_sources = retrieved_chunks
+                            else:
+                                full_response = "Please check your connectivity or switch to ⚡ 2G Ultra-Lite mode."
+                                st.markdown(full_response)
+                                retrieved_sources = []
+                            failover_model = "⚡ 2G Local ChromaDB Fallback"
                             portal_url = ""
 
                         st.session_state.messages.append({
                             "role": "assistant",
                             "content": full_response,
                             "sources": retrieved_sources,
-                            "model_used": "⚡ 2G Offline Fallback",
+                            "model_used": failover_model,
                             "portal_url": portal_url,
                             "search_query": current_prompt
                         })

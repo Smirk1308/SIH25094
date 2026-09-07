@@ -16,7 +16,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "Prime Minister's Special Scholarship Scheme (PMSSS J&K)",
         "keywords": [
             "pmsss", "prime minister scholarship", "aicte jk", "5000 slots",
-            "pmsss eligibility", "pmsss stipend", "pmsss income limit", "pmsss quota"
+            "pmsss eligibility", "pmsss stipend", "pmsss income limit", "pmsss quota",
+            "پی ایم ایس ایس ایس", "وزیر اعظم اسکالرشپ", "وظیفہ", "پی ایم ایس ایس ایس اہلیت", "سکالرشپ", "وظٲئف",
+            "पीएमएसएसएस", "छात्रवृत्ति", "पीएम छात्रवृत्ति", "एआईसीटीई छात्रवृत्ति", "5000 सीटें"
         ],
         "summary": (
             "The **Prime Minister's Special Scholarship Scheme (PMSSS)** is a flagship Government of India initiative "
@@ -39,7 +41,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "Post-Matric Scholarship Scheme for J&K Students",
         "keywords": [
             "post matric", "post-matric", "scholarships.gov.in", "nsp scholarship",
-            "income 2.5", "2.5 lakh", "maintenance allowance", "tribal affairs pms"
+            "income 2.5", "2.5 lakh", "maintenance allowance", "tribal affairs pms",
+            "پوسٹ میٹرک", "این ایس پی", "پوسٹ میٹرک اسکالرشپ", "سکالرشپس",
+            "पोस्ट मैट्रिक", "छात्रवृत्ति पोर्टल", "मैट्रिकोत्तर छात्रवृत्ति"
         ],
         "summary": (
             "The **Post-Matric Scholarship for J&K** supports meritorious students pursuing post-secondary education "
@@ -61,7 +65,8 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "Merit-cum-Means Scholarship for Minority Communities",
         "keywords": [
             "merit cum means", "minority scholarship", "ministry of minority affairs",
-            "50 percent marks", "mcm scholarship", "minority technical"
+            "50 percent marks", "mcm scholarship", "minority technical",
+            "اقلیتی اسکالرشپ", "میرٹ کم مینس", "اقلیتی امور", "अल्पसंख्यक छात्रवृत्ति", "मेरिट कम मीन्स"
         ],
         "summary": (
             "The **Merit-cum-Means Scholarship Scheme** administered by the Ministry of Minority Affairs supports "
@@ -81,7 +86,8 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "INSPIRE Scholarship for Higher Education (SHE - DST)",
         "keywords": [
             "inspire", "inspire scholarship", "dst", "science scholarship", "80000",
-            "top 1 percent", "pure science", "bsc science scholarship"
+            "top 1 percent", "pure science", "bsc science scholarship",
+            "انسپائر اسکالرشپ", "سائنس اسکالرشپ", "محکمہ سائنس و ٹیکنالوجی", "इंस्पायर स्कॉलरशिप", "विज्ञान छात्रवृत्ति"
         ],
         "summary": (
             "The **INSPIRE Scholarship** from the Department of Science and Technology (DST) empowers meritorious science "
@@ -100,7 +106,8 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "category": "Scholarships",
         "title": "SAMARTHAN Scheme for Higher Education in J&K",
         "keywords": [
-            "samarthan", "samarthan scheme", "higher education aid", "guidelines samarthan"
+            "samarthan", "samarthan scheme", "higher education aid", "guidelines samarthan",
+            "سمرتھن اسکیم", "اعلی تعلیم امداد", "समर्थन योजना", "उच्च शिक्षा सहायता"
         ],
         "summary": (
             "The **SAMARTHAN Scheme** is a targeted assistance framework designed to provide tuition fee waivers, "
@@ -120,7 +127,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "NIT Srinagar: Branches, Home State Quota & Cutoffs",
         "keywords": [
             "nit srinagar", "nit srinagar cutoff", "nit srinagar branches",
-            "hazratbal", "home state quota nit", "josaa nit srinagar", "jee main nit"
+            "hazratbal", "home state quota nit", "josaa nit srinagar", "jee main nit",
+            "این آئی ٹی سری نگر", "این آئی ٹی", "جے ای ای کٹ آف", "این آئی ٹی سرینگر", "این آئی ٹی حضرت بل", "ہوم اسٹیٹ کوٹہ",
+            "एनआईटी श्रीनगर", "एनआईटी कटऑफ", "हजरतबल", "होम स्टेट कोटा"
         ],
         "summary": (
             "**National Institute of Technology (NIT) Srinagar** at Hazratbal is an Institute of National Importance.\n\n"
@@ -144,7 +153,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "Islamic University of Science and Technology (IUST Awantipora)",
         "keywords": [
             "iust", "iust awantipora", "islamic university", "iust fee",
-            "iust btech", "iust fee structure", "pulwama engineering"
+            "iust btech", "iust fee structure", "pulwama engineering",
+            "آئی یو ایس ٹی", "اسلامک یونیورسٹی", "آئی یو ایس ٹی اونتی پورہ", "اونتی پورہ انجینئرنگ",
+            "आईयूएसटी", "इस्लामिक यूनिवर्सिटी अवंतीपोरा", "आईयूएसटी फीस"
         ],
         "summary": (
             "**IUST Awantipora** is a premier public university in South Kashmir offering accredited B.Tech programs.\n\n"
@@ -163,7 +174,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "SSM College of Engineering (Parihaspora, Baramulla)",
         "keywords": [
             "ssm", "ssm college", "parihaspora", "pattan", "baramulla engineering",
-            "ssm btech", "ssm admission"
+            "ssm btech", "ssm admission",
+            "ایس ایس ایم کالج", "بارہمولہ انجینئرنگ", "پریہاس پورہ", "پٹن انجینئرنگ",
+            "एसएसएम कॉलेज", "बारामूला इंजीनियरिंग"
         ],
         "summary": (
             "**SSM College of Engineering** (Parihaspora, Baramulla) is the pioneering private engineering college in Kashmir Valley, "
@@ -181,7 +194,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "category": "Engineering",
         "title": "Model Institute of Engineering and Technology (MIET Jammu)",
         "keywords": [
-            "miet", "miet jammu", "model institute", "kot bhalwal", "jammu engineering"
+            "miet", "miet jammu", "model institute", "kot bhalwal", "jammu engineering",
+            "ایم آئی ای ٹی جموں", "ایم آئی ای ٹی", "ماڈل انسٹی ٹیوٹ", "کوٹ بھلوال",
+            "एमआईईटी जम्मू", "मॉडल इंस्टीट्यूट"
         ],
         "summary": (
             "**MIET Jammu** (Kot Bhalwal) is an autonomous, NAAC 'A' accredited technical college affiliated with University of Jammu.\n\n"
@@ -199,7 +214,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "Government Medical Colleges: GMC Srinagar & GMC Jammu",
         "keywords": [
             "gmc srinagar", "gmc jammu", "smhs hospital", "mbbs j&k", "gmc cutoffs",
-            "medical college srinagar", "neet gmc", "gmc admission"
+            "medical college srinagar", "neet gmc", "gmc admission",
+            "جی ایم سی سری نگر", "جی ایم سی جموں", "میڈیکل کالج", "ایم بی بی ایس کٹ آف", "جی ایم سی", "نیٹ کٹ آف", "ایس ایم ایچ ایس",
+            "नीट कटऑफ", "जीएमसी श्रीनगर", "जीएमसी जम्मू", "एमबीबीएस कटऑफ", "मेडिकल कॉलेज"
         ],
         "summary": (
             "**GMC Srinagar** (attached with SMHS & Lal Ded Hospitals) and **GMC Jammu** (attached with associated city hospitals) "
@@ -218,7 +235,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "category": "Medical",
         "title": "Sher-i-Kashmir Institute of Medical Sciences (SKIMS Soura & Bemina)",
         "keywords": [
-            "skims", "skims soura", "skims bemina", "skims medical college", "skims mbbs"
+            "skims", "skims soura", "skims bemina", "skims medical college", "skims mbbs",
+            "سکمز", "سکمز صورہ", "سکمز بمی پورہ", "سکمز میڈیکل", "سکمز ایم بی بی ایس",
+            "स्किम्स सौरा", "स्किम्स बेमिना", "स्किम्स मेडिकल कॉलेज"
         ],
         "summary": (
             "**SKIMS Soura** is an autonomous deemed university and apex tertiary healthcare & super-specialty research institute in J&K.\n\n"
@@ -237,7 +256,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "BAMS & AYUSH Colleges in Jammu and Kashmir",
         "keywords": [
             "bams", "ayush", "ayurvedic college", "unani college", "akhnoor", "ganderbal",
-            "gamc akhnoor", "bums j&k", "ayush cutoffs"
+            "gamc akhnoor", "bums j&k", "ayush cutoffs",
+            "بی اے ایم ایس", "آیوش", "یونانی کالج", "گاندربل یونانی", "بی یو ایم ایس", "اکھنور آیورویدک",
+            "बीएएमएस", "आयुष", "यूनानी कॉलेज", "गांदरबल", "अखनूर"
         ],
         "summary": (
             "Ayurvedic and Unani medical degrees are offered under the **Directorate of AYUSH J&K**:\n\n"
@@ -257,7 +278,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "Class 12 Science PCM Career Options & Entrance Exams",
         "keywords": [
             "pcm", "after 12th pcm", "career in pcm", "non medical", "pcm options",
-            "engineering defence merchant navy", "architecture nata"
+            "engineering defence merchant navy", "architecture nata",
+            "پی سی ایم", "بارہویں کے بعد پی سی ایم", "نان میڈیکل", "انجینئرنگ کے راستے", "دفاعی خدمات", "مرچنٹ نیوی",
+            "पीसीएम", "12वीं के बाद पीसीएम", "नॉन मेडिकल", "इंजीनियरिंग विकल्प"
         ],
         "summary": (
             "Key career pathways for students completing Class 12 with **Physics, Chemistry & Mathematics (PCM)**:\n\n"
@@ -278,7 +301,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "Class 12 Science PCB Career Options & Medical Streams",
         "keywords": [
             "pcb", "after 12th pcb", "career in pcb", "medical options", "pcb careers",
-            "bsc nursing", "paramedical", "bams mbbs bds"
+            "bsc nursing", "paramedical", "bams mbbs bds",
+            "پی سی بی", "بارہویں کے بعد پی سی بی", "میڈیکل راستے", "نرسنگ", "پیرا میڈیکل", "بی ایس سی نرسنگ",
+            "पीसीबी", "12वीं के बाद मेडिकल", "नर्सिंग", "पैरामेडिकल", "बीएससी नर्सिंग"
         ],
         "summary": (
             "Key career pathways for students completing Class 12 with **Physics, Chemistry & Biology (PCB)**:\n\n"
@@ -299,7 +324,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "Arts & Humanities Career Paths: Law, Media & Civil Services",
         "keywords": [
             "arts", "after 12th arts", "humanities", "ba streams", "clat", "law career",
-            "journalism", "civil services arts"
+            "journalism", "civil services arts",
+            "آرٹس", "ہیومینیٹیز", "بارہویں کے بعد آرٹس", "قانون کیریئر", "کلات", "صحافت", "سول سروسز آرٹس",
+            "आर्ट्स", "ह्यूमैनिटीज", "12वीं के बाद आर्ट्स", "लॉ करियर", "पत्रकारिता"
         ],
         "summary": (
             "Rewarding career pathways for **Arts & Humanities** students in J&K:\n\n"
@@ -319,7 +346,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "Commerce Career Paths: CA, BCom, BBA, Banking & Finance",
         "keywords": [
             "commerce", "after 12th commerce", "bcom", "bba", "ca pathway",
-            "chartered accountancy", "icai", "banking career"
+            "chartered accountancy", "icai", "banking career",
+            "کامرس", "سی اے", "بی کام", "بی بی اے", "بینکنگ کیریئر", "چارٹرڈ اکاؤنٹنسی",
+            "कॉमर्स", "सीए", "बीकॉम", "बीबीए", "बैंकिंग करियर", "चार्टर्ड अकाउंटेंसी"
         ],
         "summary": (
             "Key career avenues for **Commerce stream** students:\n\n"
@@ -338,7 +367,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "category": "Government & Banking",
         "title": "Jammu & Kashmir Bank (JK Bank) Recruitment Exams",
         "keywords": [
-            "jk bank", "jkbank", "banking associate", "jk bank po", "bank recruitment jk"
+            "jk bank", "jkbank", "banking associate", "jk bank po", "bank recruitment jk",
+            "جے کے بینک", "بینکنگ ایسوسی ایٹ", "جے کے بینک پی او", "جے کے بینک امتحان", "جے کے بینک نوکری",
+            "जेके बैंक", "बैंकिंग एसोसिएट", "जेके बैंक भर्ती", "जेके बैंक पीओ"
         ],
         "summary": (
             "**J&K Bank** conducts major recruitment drives for graduate candidates in the UT:\n\n"
@@ -357,7 +388,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "JKSSB Non-Gazetted Government Jobs in J&K",
         "keywords": [
             "jkssb", "jkssb jobs", "patwari", "junior assistant", "sub inspector",
-            "panchayat secretary", "jkssb exam"
+            "panchayat secretary", "jkssb exam",
+            "جے کے ایس ایس بی", "سرکاری نوکریاں", "پٹواری", "جے کے پولیس", "سب انسپکٹر", "جے کے ایس ایس بی اسامی", "پنچایت سیکرٹری",
+            "जेकेएसएसबी", "पटवारी", "सरकारी नौकरी", "सब इंस्पेक्टर", "पंचायत सेक्रेटरी"
         ],
         "summary": (
             "The **Jammu & Kashmir Services Selection Board (JKSSB)** handles direct recruitment for all non-gazetted UT cadres:\n\n"
@@ -376,7 +409,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "JKPSC Combined Competitive Examination (CCE / KAS)",
         "keywords": [
             "jkpsc", "kas", "cce", "junior scale kas", "jk administrative service",
-            "kashmir civil service", "jkpsc exam"
+            "kashmir civil service", "jkpsc exam",
+            "جے کے پی ایس سی", "کے اے ایس", "جے کے ایڈمنسٹریٹو سروس", "سول سروسز", "جے کے پی ایس سی امتحان", "کشمیر سول سروس",
+            "जेकेपीएससी", "केएएस", "सिविल सेवा", "प्रशासनिक सेवा", "जेकेपीएससी परीक्षा"
         ],
         "summary": (
             "The **Jammu and Kashmir Public Service Commission (JKPSC)** conducts the CCE for executive administrative cadres:\n\n"
@@ -394,7 +429,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "category": "Entrance Exams",
         "title": "JKCET (Jammu & Kashmir Common Entrance Test for Engineering)",
         "keywords": [
-            "jkcet", "jkcet exam", "bopee engineering", "jkcet dates", "jkcet eligibility"
+            "jkcet", "jkcet exam", "bopee engineering", "jkcet dates", "jkcet eligibility",
+            "جے کے سی ای ٹی", "بوپی", "جے کے سی ای ٹی امتحان", "انجینئرنگ داخلہ", "بوپی انجینئرنگ",
+            "जेकेसीईटी", "बोपी", "इंजीनियरिंग प्रवेश परीक्षा", "जेकेसीईटी तारीख"
         ],
         "summary": (
             "**JKCET** is the regional entrance test conducted by the **Board of Professional Entrance Examinations (BOPEE)**:\n\n"
@@ -413,7 +450,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "Software Engineering & Tech Roadmap for J&K Students",
         "keywords": [
             "software engineering", "coding roadmap", "web development", "dsa",
-            "python java c++", "resume xyz formula", "tech career"
+            "python java c++", "resume xyz formula", "tech career",
+            "سافٹ ویئر انجینئرنگ", "کوڈنگ", "ویب ڈویلپمنٹ", "پروگرامنگ", "ڈی ایس اے", "سافٹ ویئر کیریئر",
+            "सॉफ्टवेयर इंजीनियरिंग", "कोडिंग रोडमैप", "प्रोग्रामिंग", "वेब डेवलपमेंट"
         ],
         "summary": (
             "A structured roadmap to build a competitive career in **Software Engineering**:\n\n"
@@ -433,7 +472,9 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
         "title": "Data Science & Artificial Intelligence Career Roadmap",
         "keywords": [
             "data science", "machine learning", "ai roadmap", "artificial intelligence",
-            "pandas numpy", "deep learning", "nlp"
+            "pandas numpy", "deep learning", "nlp",
+            "ڈیٹا سائنس", "مصنوعی ذہانت", "مشین لرننگ", "ڈیٹا سائنس روڈ میپ", "اے آئی کیریئر",
+            "डेटा साइंस", "आर्टिफिशियल इंटेलिजेंस", "मशीन लर्निंग", "एआई रोडमैप"
         ],
         "summary": (
             "Foundational roadmap for **Data Science & AI**:\n\n"
@@ -450,8 +491,14 @@ OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
 ]
 
 
+import string
+
+# Unicode-safe punctuation pattern preserving Indic and Perso-Arabic scripts (matras, viramas, diacritics)
+PUNCT_PATTERN = re.compile(r'[' + re.escape(string.punctuation + '؟،؛۔।॥\u200c\u200d') + r']+')
+
+
 class OfflineQueryEngine:
-    """Ultra-fast 2G Offline query matching engine with sub-10ms response time."""
+    """Ultra-fast 2G Offline query matching engine with sub-1ms response time and multilingual support."""
 
     def __init__(self, knowledge_base: Optional[List[Dict[str, Any]]] = None):
         self.kb = knowledge_base or OFFLINE_KNOWLEDGE_BASE
@@ -459,13 +506,17 @@ class OfflineQueryEngine:
         self._compiled_kb = []
         for item in self.kb:
             kw_tokens = set()
+            clean_keywords = []
             for kw in item.get("keywords", []):
-                cleaned = re.sub(r"[^\w\s]", " ", kw.lower())
-                kw_tokens.update(cleaned.split())
+                cleaned = PUNCT_PATTERN.sub(" ", kw.lower()).strip()
+                if cleaned:
+                    clean_keywords.append(cleaned)
+                    kw_tokens.update(cleaned.split())
             self._compiled_kb.append({
                 "item": item,
                 "kw_tokens": kw_tokens,
-                "keywords": [k.lower() for k in item.get("keywords", [])]
+                "keywords": clean_keywords,
+                "raw_keywords": [k.lower() for k in item.get("keywords", [])]
             })
 
     def match_query(self, query: str) -> Optional[Dict[str, Any]]:
@@ -476,7 +527,8 @@ class OfflineQueryEngine:
         if not query or not query.strip():
             return None
 
-        q_clean = re.sub(r"[^\w\s]", " ", query.lower()).strip()
+        q_lower = query.lower().strip()
+        q_clean = PUNCT_PATTERN.sub(" ", q_lower).strip()
         q_tokens = set(q_clean.split())
         if not q_tokens:
             return None
@@ -485,25 +537,26 @@ class OfflineQueryEngine:
         best_entry = None
 
         for entry in self._compiled_kb:
-            raw_keywords = entry["keywords"]
+            raw_keywords = entry["raw_keywords"]
+            clean_keywords = entry["keywords"]
             kw_tokens = entry["kw_tokens"]
 
             score = 0.0
 
-            # 1. Exact phrase match boost
-            for kw in raw_keywords:
-                if kw in q_clean:
-                    score += 4.0
-                elif any(word in q_clean for word in kw.split() if len(word) > 3):
-                    score += 1.5
+            # 1. Exact phrase match boost (checks both raw and cleaned query)
+            for kw, ckw in zip(raw_keywords, clean_keywords):
+                if kw in q_lower or (ckw and ckw in q_clean):
+                    score += 4.5
+                elif any(word in q_clean for word in ckw.split() if len(word) > 2):
+                    score += 1.8
 
             # 2. Token overlap score (Jaccard-like overlap)
             common_tokens = q_tokens.intersection(kw_tokens)
             if common_tokens:
-                score += len(common_tokens) * 2.0
+                score += len(common_tokens) * 2.2
 
             # Normalize against query length
-            score = score / (len(q_tokens) ** 0.5)
+            score = score / (len(q_tokens) ** 0.45)
 
             if score > best_score:
                 best_score = score

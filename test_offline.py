@@ -77,6 +77,21 @@ class TestOfflineQueryEngine(unittest.TestCase):
         self.assertIsNotNone(res)
         self.assertEqual(res["id"], "jkcet_exam")
 
+    def test_08_multilingual_urdu_hindi_matching(self):
+        """Test matching Urdu, Hindi, and Kashmiri queries in under 5ms."""
+        urdu_res = self.engine.match_query("پی ایم ایس ایس ایس وظیفہ کیا ہے؟")
+        self.assertIsNotNone(urdu_res, "Urdu PMSSS query should match")
+        self.assertEqual(urdu_res["id"], "pmsss_jk")
+        self.assertLess(urdu_res["latency_ms"], 5.0)
+
+        hindi_res = self.engine.match_query("पीएमएसएसएस छात्रवृत्ति की पात्रता क्या है?")
+        self.assertIsNotNone(hindi_res, "Hindi PMSSS query should match")
+        self.assertEqual(hindi_res["id"], "pmsss_jk")
+
+        gmc_urdu = self.engine.match_query("جی ایم سی سری نگر ایم بی بی ایس کٹ آف")
+        self.assertIsNotNone(gmc_urdu, "Urdu GMC query should match")
+        self.assertEqual(gmc_urdu["id"], "gmc_srinagar_jammu")
+
 
 if __name__ == "__main__":
     unittest.main()
