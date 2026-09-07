@@ -53,7 +53,8 @@ def get_logo_base64():
     return ""
 
 # ==========================================
-# TRILINGUAL LOCALIZATION (English / हिंदी / اردو)
+# MULTILINGUAL LOCALIZATION (English / हिंदी / اردو / کٲشُر)
+# J&K Official Languages Act, 2020 Compliant
 # ==========================================
 TRANSLATIONS = {
     "English": {
@@ -62,13 +63,66 @@ TRANSLATIONS = {
         "explore_heading": "💡 Quick Career & Scholarship Topics",
         "btn_ask": "Ask AI Advisor",
         "lang_badge": "🌐 English Active",
-        "system_instruction": "Answer in clear English.",
+        "system_instruction": "Answer in clear English grounded in official J&K government policies.",
         "prompts": [
             ("🎓 PMSSS J&K Guide", "What are the eligibility and stipend details for PMSSS J&K Scholarship?"),
             ("🏥 Medical Cutoffs", "What are the NEET UG cutoff marks for GMC Srinagar and GMC Jammu?"),
             ("🏛️ NIT Srinagar", "What are the JEE Main cutoffs and branches for NIT Srinagar Home State Quota?"),
             ("💼 JKSSB Recruitment", "What government job recruitments are conducted by JKSSB in J&K?"),
-        ]
+        ],
+        "tab_advisor": "💬 AI Advisor",
+        "tab_colleges": "🏫 Colleges & Seats",
+        "tab_scholarships": "🎯 Scholarships",
+        "tab_careers": "💼 Careers & Jobs",
+        "tab_interview": "🎤 Mock Interview",
+        "tab_resume": "📄 Resume Studio",
+        "tab_architecture": "🔬 System Architecture",
+        "tab_admin": "📊 Admin Portal",
+        "jury_demo_title": "⚡ JURY LIVE DEMO SUITE — 1-Click Verification Scenarios",
+        "jury_demo_sub": "Click any scenario below to immediately benchmark the underlying engine without manual typing:",
+        "jury_demo_btn_2g": "⚡ 1. 2G Edge Engine (0.27ms)",
+        "jury_demo_cap_2g": "Simulate Kupwara/Poonch offline outage",
+        "jury_demo_btn_quota": "⚖️ 2. S.O. 176 Quota Matrix",
+        "jury_demo_cap_quota": "Compute 2024 GCET & NIT reservation",
+        "jury_demo_btn_rag": "📚 3. Gazette RAG Citations",
+        "jury_demo_cap_rag": "Multi-hop RAG with PDF clause citations",
+        "colleges_heading": "### 🏫 J&K Higher Education Directory & Seat Matrices",
+        "colleges_sub": "Explore 26 higher education institutions across Jammu & Kashmir with official seat distributions and cutoffs.",
+        "filter_district": "📍 District Filter",
+        "filter_type": "🎓 College Type",
+        "search_college_label": "🔍 Search College or Branch",
+        "search_college_ph": "e.g., NIT, GMC, IUST, CSE...",
+        "colleges_found": "Institutions Found",
+        "colleges_compare": "### 📊 Side-by-Side College Cutoff Comparison",
+        "sch_heading": "### 🎯 Smart Scholarship & Eligibility Engine",
+        "sch_sub": "Fill your academic & financial profile to match against 15+ central & J&K government scholarship programs.",
+        "sch_stream": "🎓 Stream",
+        "sch_income": "💰 Annual Household Income",
+        "sch_category": "🏛️ Category / Domicile",
+        "sch_gender": "👤 Gender",
+        "sch_pct": "📊 Class 12th Board %",
+        "sch_age": "🎂 Age (Years)",
+        "sch_pwd": "♿ Person with Disability (PwD)",
+        "sch_found": "Matching Schemes Found",
+        "sch_btn_ask": "💬 Ask AI Advisor to Guide Me on These Scholarships",
+        "car_heading": "### 💼 J&K Career Pathways & Skill Matcher",
+        "car_sub": "Explore high-growth career tracks aligned with J&K civil services, technology corridors, and local industrial clusters.",
+        "car_sector": "🏢 Select Target Sector",
+        "car_skills": "🛠️ Your Current Skills",
+        "car_btn_analyze": "🚀 Analyze Skill Gap & Career Roadmap",
+        "iv_heading": "### 🎤 AI-Powered Mock Interview Simulator",
+        "iv_sub": "Prepare for JKSSB, KAS, campus placements, and viva examinations with real-time AI rubric scoring.",
+        "iv_category": "🎯 Select Interview Category",
+        "iv_btn_launch": "▶️ Launch Mock Interview Session",
+        "iv_response_lbl": "Your Response (Speak your thoughts or type clearly):",
+        "iv_btn_submit": "📤 Submit Response for AI Evaluation",
+        "iv_btn_end": "⏹️ Conclude Session Early",
+        "res_heading": "### 📄 AI Resume Auditor & Job-Fit Analyzer",
+        "res_sub": "Upload your CV/resume in PDF format for automated rubric scoring, formatting critique, and role-match analysis.",
+        "res_upload": "📎 Upload Resume PDF",
+        "res_role": "🎯 Target Role / Industry Track",
+        "arch_heading": "### 🔬 System Architecture & Engineering Verification",
+        "arch_sub": "Technical Architecture, 2G Edge Inverted Index, Multi-Model Router & Official Gazette Knowledge Base · SIH25094",
     },
     "हिंदी (Hindi)": {
         "tagline": "शिक्षा और अवसरों का आपका सेतु",
@@ -76,13 +130,66 @@ TRANSLATIONS = {
         "explore_heading": "💡 त्वरित विषय (Quick Topics)",
         "btn_ask": "सलाहकार से पूछें",
         "lang_badge": "🌐 हिंदी सक्रिय",
-        "system_instruction": "कृपया उत्तर हिंदी (Hindi) में सरल और स्पष्ट भाषा में दें।",
+        "system_instruction": "कृपया उत्तर हिंदी (Hindi) में सरल, स्पष्ट और सम्मानजनक भाषा में दें तथा आधिकारिक सरकारी अधिसूचनाओं का संदर्भ दें।",
         "prompts": [
             ("🎓 PMSSS छात्रवृत्ति", "PMSSS J&K छात्रवृत्ति की पात्रता और ₹1 लाख वजीफे का विवरण क्या है?"),
             ("🏥 GMC नीट कटऑफ", "GMC श्रीनगर और GMC जम्मू के लिए NEET UG कटऑफ क्या है?"),
             ("🏛️ NIT श्रीनगर कटऑफ", "NIT श्रीनगर होम स्टेट कोटा के लिए JEE Main कटऑफ क्या है?"),
             ("💼 JKSSB सरकारी भर्तियां", "J&K में JKSSB द्वारा कौन-सी सरकारी भर्तियां आयोजित की जाती हैं?"),
-        ]
+        ],
+        "tab_advisor": "💬 एआई सलाहकार",
+        "tab_colleges": "🏫 कॉलेज और सीटें",
+        "tab_scholarships": "🎯 छात्रवृत्तियां",
+        "tab_careers": "💼 करियर और नौकरियां",
+        "tab_interview": "🎤 मॉक इंटरव्यू",
+        "tab_resume": "📄 बायोडाटा / रिज्यूमे",
+        "tab_architecture": "🔬 सिस्टम आर्किटेक्चर",
+        "tab_admin": "📊 एडमिन पोर्टल",
+        "jury_demo_title": "⚡ जूरी लाइव डेमो — 1-क्लिक सत्यापन परिदृश्य",
+        "jury_demo_sub": "बिना टाइप किए अंतर्निहित इंजन का तुरंत परीक्षण करने के लिए नीचे क्लिक करें:",
+        "jury_demo_btn_2g": "⚡ 1. 2G एज इंजन (0.27ms)",
+        "jury_demo_cap_2g": "कुपवाड़ा/पुंछ ऑफलाइन नेटवर्क टेस्ट",
+        "jury_demo_btn_quota": "⚖️ 2. S.O. 176 आरक्षण मैट्रिक्स",
+        "jury_demo_cap_quota": "2024 GCET व NIT आरक्षण कोटा गणना",
+        "jury_demo_btn_rag": "📚 3. सरकारी गजट संदर्भ",
+        "jury_demo_cap_rag": "आधिकारिक सरकारी पीडीएफ क्लॉज संदर्भों के साथ",
+        "colleges_heading": "### 🏫 J&K उच्च शिक्षा संस्थान एवं सीट वितरण मैट्रिक्स",
+        "colleges_sub": "आधिकारिक सीट वितरण और कटऑफ के साथ जम्मू-कश्मीर के 26 उच्च शिक्षण संस्थानों का अन्वेषण करें।",
+        "filter_district": "📍 जिला चुनें",
+        "filter_type": "🎓 कॉलेज का प्रकार",
+        "search_college_label": "🔍 कॉलेज या ब्रांच खोजें",
+        "search_college_ph": "उदा. NIT, GMC, IUST, CSE...",
+        "colleges_found": "संस्थान मिले",
+        "colleges_compare": "### 📊 कॉलेज कटऑफ तुलना",
+        "sch_heading": "### 🎯 स्मार्ट छात्रवृत्ति एवं पात्रता इंजन",
+        "sch_sub": "15+ केंद्रीय और जम्मू-कश्मीर सरकारी छात्रवृत्ति योजनाओं से मिलान के लिए अपना शैक्षणिक और वित्तीय विवरण भरें।",
+        "sch_stream": "🎓 संकाय (Stream)",
+        "sch_income": "💰 वार्षिक पारिवारिक आय",
+        "sch_category": "🏛️ श्रेणी / अधिवास",
+        "sch_gender": "👤 लिंग",
+        "sch_pct": "📊 12वीं बोर्ड प्रतिशत (%)",
+        "sch_age": "🎂 आयु (वर्ष)",
+        "sch_pwd": "♿ दिव्यांग जन (PwD)",
+        "sch_found": "पात्र छात्रवृत्तियां मिलीं",
+        "sch_btn_ask": "💬 इन छात्रवृत्तियों के बारे में एआई सलाहकार से पूछें",
+        "car_heading": "### 💼 J&K करियर मार्ग एवं कौशल मिलान",
+        "car_sub": "J&K सिविल सेवा, प्रौद्योगिकी और स्थानीय औद्योगिक क्लस्टरों के अनुरूप करियर अवसरों का पता लगाएं।",
+        "car_sector": "🏢 लक्षित क्षेत्र चुनें",
+        "car_skills": "🛠️ आपके वर्तमान कौशल",
+        "car_btn_analyze": "🚀 कौशल अंतर और करियर रोडमैप का विश्लेषण करें",
+        "iv_heading": "### 🎤 एआई-संचालित मॉक इंटरव्यू सिमुलेटर",
+        "iv_sub": "JKSSB, KAS, कैंपस प्लेसमेंट और मौखिक परीक्षाओं के लिए रीयल-टाइम एआई स्कोरिंग के साथ तैयारी करें।",
+        "iv_category": "🎯 साक्षात्कार श्रेणी चुनें",
+        "iv_btn_launch": "▶️ मॉक इंटरव्यू सत्र शुरू करें",
+        "iv_response_lbl": "आपका उत्तर (स्पष्ट रूप से अपने विचार लिखें):",
+        "iv_btn_submit": "📤 एआई मूल्यांकन के लिए उत्तर भेजें",
+        "iv_btn_end": "⏹️ सत्र समाप्त करें",
+        "res_heading": "### 📄 एआई बायोडाटा परीक्षक एवं जॉब-फिट विश्लेषक",
+        "res_sub": "स्वचालित स्कोरिंग, प्रारूप जांच और पद-मिलान के लिए अपना बायोडाटा (PDF) अपलोड करें।",
+        "res_upload": "📎 बायोडाटा PDF अपलोड करें",
+        "res_role": "🎯 लक्षित पद / उद्योग",
+        "arch_heading": "### 🔬 सिस्टम आर्किटेक्चर एवं तकनीकी सत्यापन",
+        "arch_sub": "तकनीकी संरचना, 2G एज इन्वर्टेड इंडेक्स, मल्टी-मॉडल राउटर एवं सरकारी गजट नॉलेज बेस · SIH25094",
     },
     "اردو (Urdu)": {
         "tagline": "تعلیم اور مواقع کا آپ کا پُل",
@@ -90,15 +197,141 @@ TRANSLATIONS = {
         "explore_heading": "💡 اہم موضوعات (Important Topics)",
         "btn_ask": "مشیر سے پوچھیں",
         "lang_badge": "🌐 اردو فعال",
-        "system_instruction": "براہ کرم اردو (Urdu) میں آسان اور واضح الفاظ میں جواب دیں۔",
+        "system_instruction": "براہ کرم اردو (Urdu) میں آسان، شائستہ اور واضح الفاظ میں جواب دیں اور سرکاری نوٹیفیکیشنز کا حوالہ دیں۔",
         "prompts": [
             ("🎓 PMSSS وظیفہ", "PMSSS J&K اسکالرشپ کی اہلیت اور وظیفے کی تفصیلات کیا ہیں؟"),
             ("🏥 GMC میڈیکل کٹ آف", "GMC سری نگر اور GMC جموں کے لیے NEET کے کٹ آف نمبرات کیا ہیں؟"),
             ("🏛️ NIT سری نگر کٹ آف", "NIT سری نگر ہوم اسٹیٹ کوٹہ کے لیے JEE کٹ آف کیا ہے؟"),
             ("💼 JKSSB اسامیاں", "جموں و کشمیر میں JKSSB کی کون سی نوکریاں دستیاب ہیں؟"),
-        ]
-    }
+        ],
+        "tab_advisor": "💬 اے آئی مشیر",
+        "tab_colleges": "🏫 کالجز اور سیٹیں",
+        "tab_scholarships": "🎯 وظائف (اسکالرشپ)",
+        "tab_careers": "💼 کیریئر اور ملازمتیں",
+        "tab_interview": "🎤 فرضی انٹرویو",
+        "tab_resume": "📄 سی وی اسٹوڈیو",
+        "tab_architecture": "🔬 سسٹم کا ڈھانچہ",
+        "tab_admin": "📊 ایڈمن پورٹل",
+        "jury_demo_title": "⚡ جیوری لائیو ڈیمو — 1-کلک تصدیق",
+        "jury_demo_sub": "بغیر ٹائپ کیے فوری طور پر سسٹم کی رفتار اور درستگی جانچنے کے لیے کلک کریں:",
+        "jury_demo_btn_2g": "⚡ 1. 2G ایج انجن (0.27ms)",
+        "jury_demo_cap_2g": "کپواڑہ/پونچھ آف لائن ٹیسٹ",
+        "jury_demo_btn_quota": "⚖️ 2. S.O. 176 کوٹہ میٹرکس",
+        "jury_demo_cap_quota": "2024 جی سی ای ٹی اور این آئی ٹی ریزرویشن",
+        "jury_demo_btn_rag": "📚 3. سرکاری گزٹ حوالہ جات",
+        "jury_demo_cap_rag": "آفیشل پی ڈی ایف کلاز حوالہ جات کے ساتھ",
+        "colleges_heading": "### 🏫 جموں و کشمیر اعلیٰ تعلیمی ڈائریکٹری اور سیٹ میٹرکس",
+        "colleges_sub": "سرکاری سیٹ تقسیم اور کٹ آف کے ساتھ جموں و کشمیر کے 26 اعلیٰ تعلیمی اداروں کی تفصیلات۔",
+        "filter_district": "📍 ضلع کا انتخاب",
+        "filter_type": "🎓 کالج کی قسم",
+        "search_college_label": "🔍 کالج یا برانچ تلاش کریں",
+        "search_college_ph": "مثلاً NIT، GMC، IUST، CSE...",
+        "colleges_found": "ادارے دستیاب ہیں",
+        "colleges_compare": "### 📊 کالج کٹ آف تقابل",
+        "sch_heading": "### 🎯 سمارٹ اسکالرشپ اور اہلیت انجن",
+        "sch_sub": "مرکزی اور جموں و کشمیر حکومت کی 15+ اسکالرشپ اسکیموں سے مماثلت کے لیے اپنی تفصیلات درج کریں۔",
+        "sch_stream": "🎓 تعلیمی شعبہ (Stream)",
+        "sch_income": "💰 سالانہ خاندانی آمدنی",
+        "sch_category": "🏛️ زمرہ / رہائش",
+        "sch_gender": "👤 جنس",
+        "sch_pct": "📊 بارہویں جماعت کے نمبرات (%)",
+        "sch_age": "🎂 عمر (سال)",
+        "sch_pwd": "♿ معذور افراد (PwD)",
+        "sch_found": "مماثل وظائف ملے",
+        "sch_btn_ask": "💬 ان وظائف کے بارے میں اے آئی مشیر سے رہنمائی لیں",
+        "car_heading": "### 💼 جموں و کشمیر کیریئر کے راستے اور مہارتیں",
+        "car_sub": "جموں و کشمیر سول سروسز، ٹیکنالوجی اور مقامی روزگار کے مواقع تلاش کریں۔",
+        "car_sector": "🏢 ہدف کا شعبہ منتخب کریں",
+        "car_skills": "🛠️ آپ کی موجودہ مہارتیں",
+        "car_btn_analyze": "🚀 مہارت کے فرق اور کیریئر کا روڈ میپ دیکھیں",
+        "iv_heading": "### 🎤 اے آئی فرضی انٹرویو سمولیٹر",
+        "iv_sub": "JKSSB، KAS، کیمپس پلیسمنٹ اور زبانی امتحانات کی ریئل ٹائم اے آئی کے ساتھ تیاری کریں۔",
+        "iv_category": "🎯 انٹرویو کا زمرہ منتخب کریں",
+        "iv_btn_launch": "▶️ فرضی انٹرویو شروع کریں",
+        "iv_response_lbl": "آپ کا جواب (اپنے خیالات واضح طور پر لکھیں):",
+        "iv_btn_submit": "📤 اے آئی جانچ کے لیے جواب جمع کریں",
+        "iv_btn_end": "⏹️ سیشن جلد ختم کریں",
+        "res_heading": "### 📄 اے آئی سی وی آڈیٹر اور ملازمت کے تجزیہ کار",
+        "res_sub": "خودکار جانچ اور جاب کے تقاضوں کے تجزیے کے لیے اپنی سی وی (PDF) اپ لوڈ کریں۔",
+        "res_upload": "📎 سی وی (PDF) اپ لوڈ کریں",
+        "res_role": "🎯 مطلوبہ ملازمت / شعبہ",
+        "arch_heading": "### 🔬 سسٹم کا ڈھانچہ اور تکنیکی تصدیق",
+        "arch_sub": "2G ایج انورٹڈ انڈیکس، ملٹی ماڈل راؤٹر اور آفیشل گزٹ ڈیٹا بیس · SIH25094",
+    },
+    "کٲشُر (Kashmiri)": {
+        "tagline": "تٲلیٖم تہٕ روزگار باپتھ تۄہُند پُل",
+        "chat_placeholder": "کالیج دٲخلہٕ، پی ایم ایس ایس ایس، سکالرشپ یا کیریئر مُتعلِق پُژھِو...",
+        "explore_heading": "💡 اَہَم موضوعات (Important Topics)",
+        "btn_ask": "صَلاح کارَس پٕژھِو",
+        "lang_badge": "🌐 کٲشُر فعال",
+        "system_instruction": "The student communicates in Kashmiri (کٲشُر). Respond in simple, respectful Kashmiri (کٲشرِس منٛز) mixed with Urdu/English terms where necessary for technical precision, citing official J&K government notifications.",
+        "prompts": [
+            ("🎓 PMSSS سکالرشپ", "PMSSS J&K سکالرشپٕچ اہلیت تہٕ ₹1 لاکھ وظیفٕچ تفصیٖل کِیاہ چھےٚ؟"),
+            ("🏥 GMC کٹ آف", "GMC سِری نگر تہٕ GMC جۆم باپتھ NEET کٹ آف کِیاہ چھُ؟"),
+            ("🏛️ NIT سِری نگر کٹ آف", "NIT سِری نگر ہوم سٹیٹ کوٹہٕ باپتھ JEE کٹ آف کِیاہ چھُ؟"),
+            ("💼 JKSSB سرکٲری نوکرِیہِ", "جموں و کشمیرَس منٛز JKSSB کٔمؠ کٔمؠ نوکرِیہِ کڈان چھُ؟"),
+        ],
+        "tab_advisor": "💬 اے آئی صَلاح کار",
+        "tab_colleges": "🏫 کالیج تہٕ سیٹہٕ",
+        "tab_scholarships": "🎯 وظٲئف (سکالرشپ)",
+        "tab_careers": "💼 کیریئر تہٕ نوکرِیہِ",
+        "tab_interview": "🎤 مَشقی اِنٹرویو",
+        "tab_resume": "📄 سی وی سٹوڈیو",
+        "tab_architecture": "🔬 سِسٹمُک ڈھانچہٕ",
+        "tab_admin": "📊 ایڈمِن پورٹل",
+        "jury_demo_title": "⚡ جیوری لائیو ڈیمو — 1-کلک تصدیق",
+        "jury_demo_sub": "سسٹمٕچ رفْتار تہٕ اہلیت جانچنہٕ باپتھ کُنٛہہ ژارِو:",
+        "jury_demo_btn_2g": "⚡ 1. 2G ایج اِنجن (0.27ms)",
+        "jury_demo_cap_2g": "کُپوارٕ/پونچھ آف لائن ٹیسٹ",
+        "jury_demo_btn_quota": "⚖️ 2. S.O. 176 کوٹہٕ مَیٹرِکس",
+        "jury_demo_cap_quota": "2024 رِزرویشن کوٹہٕ حِساب",
+        "jury_demo_btn_rag": "📚 3. سرکٲری گَزٹ حَوالہٕ",
+        "jury_demo_cap_rag": "سرکٲری پی ڈی ایف حَوالَن سۭتھ",
+        "colleges_heading": "### 🏫 جموں و کشمیر اعلیٰ تعلیمی ڈائریکٹری تہٕ سیٹ مَیٹرِکس",
+        "colleges_sub": "جموں و کشمیرٕکؠ 26 سرکٲری تعلیمی اِدارَن ہٕنٛز فِہرِست، سیٹہٕ تہٕ کٹ آف وُچھِو۔",
+        "filter_district": "📍 ضِلعہٕ ژارُن",
+        "filter_type": "🎓 کالیجُک قٕسٕم",
+        "search_college_label": "🔍 کالیج یا برانچ تلاشن",
+        "search_college_ph": "مثلاً NIT، GMC، IUST، CSE...",
+        "colleges_found": "ادارے میلے",
+        "colleges_compare": "### 📊 کالیج کٹ آف تقابل",
+        "sch_heading": "### 🎯 سمارٹ سکالرشپ تہٕ اہلیت اِنجن",
+        "sch_sub": "پَنُن تعلیمی تہٕ مالی پروفائل دَرٕج کٔرِو تہٕ 15 کھۄتہٕ زِیٛادٕ سرکٲری وظائف تلاشن۔",
+        "sch_stream": "🎓 تعلیمی شُعبہٕ",
+        "sch_income": "💰 سالانہ خانٛدٲنی آمدنی",
+        "sch_category": "🏛️ زمرہٕ / رہٲئش",
+        "sch_gender": "👤 جِنس",
+        "sch_pct": "📊 ۱۲ویں جماعتٕک نمبر (%)",
+        "sch_age": "🎂 وٲنٛس (عُمر)",
+        "sch_pwd": "♿ معذور اَفراد (PwD)",
+        "sch_found": "مُطابِق وظٲئف لَبنہٕ آیہِ",
+        "sch_btn_ask": "💬 اِمَن سکالرشپَن مُتعلِق اے آئی صَلاح کارَس پٕژھِو",
+        "car_heading": "### 💼 جموں و کشمیر کیریئر تہٕ روزگار راہ",
+        "car_sub": "سول سروسز، ٹیکنالوجی تہٕ مقامی صَنعتی شُعبَن منٛز روزگار تلاش کٔرِو۔",
+        "car_sector": "🏢 ہدفُک شُعبہٕ ژارُن",
+        "car_skills": "🛠️ تۄہٕندؠ موٗجوٗدہٕ ہُنَر",
+        "car_btn_analyze": "🚀 ہُنَر تہٕ کیریئرُک روڈ میپ وُچھِو",
+        "iv_heading": "### 🎤 اے آئی مَشقی اِنٹرویو سِمولیٹر",
+        "iv_sub": "JKSSB، KAS، تہٕ کیمپس پلیسمینٹ باپتھ ریئل ٹائم اے آئی ریٹنگ سۭتھ تیٲری کٔرِو۔",
+        "iv_category": "🎯 اِنٹرویو کٹیگری ژارِو",
+        "iv_btn_launch": "▶️ مَشقی اِنٹرویو شروٗع کٔرِو",
+        "iv_response_lbl": "تۄہُند جواب (صَفائی سۭتھ پَنُن خیال لؠکھِو):",
+        "iv_btn_submit": "📤 اے آئی جانچ باپتھ جواب پیش کٔرِو",
+        "iv_btn_end": "⏹️ سیشن ختم کٔرِو",
+        "res_heading": "### 📄 اے آئی سی وی جانچ تہٕ نوکری تجزیہٕ کار",
+        "res_sub": "پَنٕنؠ سی وی (PDF) اپ لوڈ کٔرِو تہٕ اے آئی سۭتھ ریٹنگ تہٕ اصلاحات حٲصل کٔرِو۔",
+        "res_upload": "📎 سی وی (PDF) اپ لوڈ کٔرِو",
+        "res_role": "🎯 ہدف نوکری / شعبہٕ",
+        "arch_heading": "### 🔬 سِسٹمُک ڈھانچہٕ تہٕ ٹیکنالوجی تصدیق",
+        "arch_sub": "2G ایج انورٹڈ انڈیکس، ملٹی ماڈل راؤٹر تہٕ سرکاری گزٹ ڈیٹا بیس · SIH25094",
+    },
 }
+
+def t(key: str, default: str = "") -> str:
+    """Retrieve localized string for the currently active language with safe fallback."""
+    active = st.session_state.get("selected_language", "English")
+    lang_dict = TRANSLATIONS.get(active, TRANSLATIONS["English"])
+    return lang_dict.get(key, TRANSLATIONS["English"].get(key, default or key))
 
 
 # Retrieve GROQ_API_KEY securely from st.secrets or environment
@@ -1343,12 +1576,15 @@ with st.sidebar:
     from model_router import render_model_badge
     render_model_badge()
 
-    # 0. Language Selector
-    st.subheader("🌐 Language / زبان / भाषा")
+    # 0. Language Selector (J&K Official Languages Act, 2020 Compliant)
+    st.subheader("🌐 Language / زبان / भाषा / کٲشُر")
+    lang_options = ["English", "हिंदी (Hindi)", "اردو (Urdu)", "کٲشُر (Kashmiri)"]
+    current_selected = st.session_state.get("selected_language", "English")
+    default_idx = lang_options.index(current_selected) if current_selected in lang_options else 0
     selected_lang = st.selectbox(
         "Interface Language",
-        options=["English", "हिंदी (Hindi)", "اردو (Urdu)"],
-        index=0,
+        options=lang_options,
+        index=default_idx,
         key="app_lang_select",
         label_visibility="collapsed"
     )
@@ -1577,16 +1813,16 @@ st.markdown(f"""
 # 4. MULTI-VIEW TOP NAVIGATION TABS
 # ==========================================
 tab_titles = [
-    "💬 AI Advisor",
-    "🏫 Colleges & Seats",
-    "🎯 Scholarships",
-    "💼 Careers & Jobs",
-    "🎤 Mock Interview",
-    "📄 Resume Studio",
-    "🔬 System Architecture"
+    t("tab_advisor"),
+    t("tab_colleges"),
+    t("tab_scholarships"),
+    t("tab_careers"),
+    t("tab_interview"),
+    t("tab_resume"),
+    t("tab_architecture")
 ]
 if st.session_state.get("admin_mode", False):
-    tab_titles.append("📊 Admin Portal")
+    tab_titles.append(t("tab_admin"))
 
 tabs = st.tabs(tab_titles)
 
@@ -1596,47 +1832,47 @@ tabs = st.tabs(tab_titles)
 # =========================================================================
 with tabs[0]:
     # 🎯 JURY LIVE EVALUATION DEMO SUITE (1-Click Hard Engineering Verification)
-    st.markdown("""
+    st.markdown(f"""
     <div style="background: linear-gradient(135deg, #0D2137 0%, #17324B 100%); border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; border-left: 5px solid #F5A623; box-shadow: 0 4px 16px rgba(13,33,55,0.12);">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:4px;">
         <div style="color:#F5A623; font-size:12.5px; font-weight:800; letter-spacing:0.8px;">
-          ⚡ JURY LIVE DEMO SUITE — 1-Click Verification Scenarios
+          {t("jury_demo_title")}
         </div>
         <span style="background:rgba(245,166,35,0.2); color:#F5A623; font-size:10px; font-weight:800; padding:2px 8px; border-radius:10px; border:1px solid rgba(245,166,35,0.4);">
           SIH EVALUATION READY
         </span>
       </div>
       <div style="color:#CBD5E1; font-size:11.5px; line-height:1.4;">
-        Click any scenario below to immediately benchmark the underlying engine without manual typing:
+        {t("jury_demo_sub")}
       </div>
     </div>
     """, unsafe_allow_html=True)
 
     jd_c1, jd_c2, jd_c3 = st.columns(3)
     with jd_c1:
-        if st.button("⚡ 1. 2G Edge Engine (0.27ms)", use_container_width=True, key="jury_demo_2g"):
+        if st.button(t("jury_demo_btn_2g"), use_container_width=True, key="jury_demo_2g"):
             st.session_state.messages.append({
                 "role": "user",
                 "content": "PMSSS Scholarship eligibility criteria, annual family income limit, and financial assistance"
             })
             st.rerun()
-        st.caption("Simulate Kupwara/Poonch offline outage")
+        st.caption(t("jury_demo_cap_2g"))
     with jd_c2:
-        if st.button("⚖️ 2. S.O. 176 Quota Matrix", use_container_width=True, key="jury_demo_quota"):
+        if st.button(t("jury_demo_btn_quota"), use_container_width=True, key="jury_demo_quota"):
             st.session_state.messages.append({
                 "role": "user",
                 "content": "What are the exact reservation categories, OM, RBA, SC, ST, and Border area quotas for engineering admissions under J&K S.O. 176 of 2024?"
             })
             st.rerun()
-        st.caption("Compute 2024 GCET & NIT reservation")
+        st.caption(t("jury_demo_cap_quota"))
     with jd_c3:
-        if st.button("📚 3. Gazette RAG Citations", use_container_width=True, key="jury_demo_rag"):
+        if st.button(t("jury_demo_btn_rag"), use_container_width=True, key="jury_demo_rag"):
             st.session_state.messages.append({
                 "role": "user",
                 "content": "Post-Matric Scholarship for J&K: Complete tuition fee reimbursement, maintenance allowance, and application procedure"
             })
             st.rerun()
-        st.caption("Multi-hop RAG with PDF clause citations")
+        st.caption(t("jury_demo_cap_rag"))
 
     st.markdown("<div style='margin-bottom:12px;'></div>", unsafe_allow_html=True)
 
@@ -1899,16 +2135,16 @@ with tabs[0]:
 # TAB 2: 🏫 COLLEGES & SEATS
 # =========================================================================
 with tabs[1]:
-    st.markdown("### 🏫 J&K Higher Education Directory & Seat Matrices")
-    st.caption("Explore 26 higher education institutions across Jammu & Kashmir with official seat distributions and cutoffs.")
+    st.markdown(t("colleges_heading"))
+    st.caption(t("colleges_sub"))
 
     ce_col1, ce_col2, ce_col3 = st.columns(3)
     with ce_col1:
-        ce_district = st.selectbox("📍 District Filter", ["All"] + get_all_districts(), key="ce_district_tab")
+        ce_district = st.selectbox(t("filter_district"), ["All"] + get_all_districts(), key="ce_district_tab")
     with ce_col2:
-        ce_type = st.selectbox("🎓 College Type", ["All"] + get_all_college_types(), key="ce_type_tab")
+        ce_type = st.selectbox(t("filter_type"), ["All"] + get_all_college_types(), key="ce_type_tab")
     with ce_col3:
-        ce_search = st.text_input("🔍 Search College or Branch", placeholder="e.g., NIT, GMC, IUST, CSE...", key="ce_search_tab")
+        ce_search = st.text_input(t("search_college_label"), placeholder=t("search_college_ph"), key="ce_search_tab")
 
     filter_district = None if ce_district == "All" else ce_district
     filter_type = None if ce_type == "All" else ce_type
@@ -1922,7 +2158,7 @@ with tabs[1]:
             st.map(map_data, zoom=7, use_container_width=True)
             st.caption(f"📍 Showing {len(map_data)} institutions across Kashmir Valley & Jammu Division.")
 
-    st.markdown(f"#### Found {len(colleges_found)} Institutions")
+    st.markdown(f"#### {len(colleges_found)} {t('colleges_found')}")
 
     for college in colleges_found[:12]:
         card_md = render_college_card(college)
@@ -1976,7 +2212,7 @@ with tabs[1]:
         st.markdown("---")
 
     # Side-by-side College Comparison Tool
-    st.markdown("### 📊 Side-by-Side College Cutoff Comparison")
+    st.markdown(t("colleges_compare"))
     all_colleges = search_colleges("")
     college_names = {c["id"]: c["name"] for c in all_colleges}
     compare_ids = st.multiselect(
@@ -2000,26 +2236,26 @@ with tabs[1]:
 # TAB 3: 🎯 SCHOLARSHIPS
 # =========================================================================
 with tabs[2]:
-    st.markdown("### 🎯 Smart Scholarship & Eligibility Engine")
-    st.caption("Fill your academic & financial profile to match against 15+ central & J&K government scholarship programs.")
+    st.markdown(t("sch_heading"))
+    st.caption(t("sch_sub"))
 
     wiz_row1_c1, wiz_row1_c2, wiz_row1_c3, wiz_row1_c4 = st.columns(4)
     with wiz_row1_c1:
-        w_stream = st.selectbox("🎓 Stream", ["PCM", "PCB", "Commerce", "Arts", "All"], key="sch_stream")
+        w_stream = st.selectbox(t("sch_stream"), ["PCM", "PCB", "Commerce", "Arts", "All"], key="sch_stream")
     with wiz_row1_c2:
-        w_income_val = st.selectbox("💰 Annual Household Income", ["Below ₹2.50 Lakh", "₹2.50L – ₹8.00L", "Above ₹8.00 Lakh"], key="sch_income")
+        w_income_val = st.selectbox(t("sch_income"), ["Below ₹2.50 Lakh", "₹2.50L – ₹8.00L", "Above ₹8.00 Lakh"], key="sch_income")
     with wiz_row1_c3:
-        w_cat = st.selectbox("🏛️ Category / Domicile", ["OM", "SC", "ST", "OBC", "RBA", "Minority"], key="sch_cat")
+        w_cat = st.selectbox(t("sch_category"), ["OM", "SC", "ST", "OBC", "RBA", "Minority"], key="sch_cat")
     with wiz_row1_c4:
-        w_gender = st.selectbox("👤 Gender", ["male", "female"], key="sch_gender")
+        w_gender = st.selectbox(t("sch_gender"), ["male", "female"], key="sch_gender")
 
     wiz_row2_c1, wiz_row2_c2, wiz_row2_c3 = st.columns(3)
     with wiz_row2_c1:
-        w_percentage = st.number_input("📊 Class 12th Board %", min_value=0, max_value=100, value=75, key="sch_pct")
+        w_percentage = st.number_input(t("sch_pct"), min_value=0, max_value=100, value=75, key="sch_pct")
     with wiz_row2_c2:
-        w_age = st.number_input("🎂 Age (Years)", min_value=15, max_value=45, value=18, key="sch_age")
+        w_age = st.number_input(t("sch_age"), min_value=15, max_value=45, value=18, key="sch_age")
     with wiz_row2_c3:
-        w_disability = st.checkbox("♿ Person with Disability (PwD)", key="sch_pwd")
+        w_disability = st.checkbox(t("sch_pwd"), key="sch_pwd")
 
     income_map = {"Below ₹2.50 Lakh": 200000, "₹2.50L – ₹8.00L": 500000, "Above ₹8.00 Lakh": 1000000}
 
@@ -2040,7 +2276,7 @@ with tabs[2]:
         strong = [m for m in matches if m.get("match_score", 0) >= 80]
         likely = [m for m in matches if 50 <= m.get("match_score", 0) < 80]
 
-        st.markdown(f"### ✅ Found **{len(matches)}** Matching Schemes")
+        st.markdown(f"### ✅ {len(matches)} {t('sch_found')}")
 
         if strong:
             st.markdown("#### 🟢 High-Eligibility Schemes (>80% Match)")
@@ -2072,7 +2308,7 @@ with tabs[2]:
     else:
         st.info("No scholarships matched this exact combination. Try adjusting stream or income parameters.")
 
-    if st.button("💬 Ask AI Advisor to Guide Me on These Scholarships", key="btn_sch_to_chat"):
+    if st.button(t("sch_btn_ask"), key="btn_sch_to_chat"):
         schemes_text = ", ".join([m.get("scholarship", m).get("name", m.get("name", "")) for m in matches[:5]]) if matches else "available schemes"
         st.session_state.messages.append({
             "role": "user",
@@ -2085,14 +2321,14 @@ with tabs[2]:
 # TAB 4: 💼 CAREERS & JOBS
 # =========================================================================
 with tabs[3]:
-    st.markdown("### 💼 J&K Labor Market Intelligence & Career Navigator")
+    st.markdown(t("car_heading"))
     job_sub1, job_sub2 = st.tabs(["🔍 Browse 30+ Job Profiles", "🎯 Interactive Skill Gap Analyzer"])
 
     with job_sub1:
-        st.caption("Explore government, banking, public sector, and private job profiles tailored for J&K youth.")
+        st.caption(t("car_sub"))
         jb_col1, jb_col2 = st.columns(2)
         with jb_col1:
-            jb_board = st.selectbox("🏛️ Recruitment Board / Sector", ["All"] + get_all_boards(), key="tab_jb_board")
+            jb_board = st.selectbox(t("car_sector"), ["All"] + get_all_boards(), key="tab_jb_board")
         with jb_col2:
             jb_search = st.text_input("🔍 Search Job Title or Department", placeholder="e.g., Junior Assistant, KAS, Police, IT...", key="tab_jb_search")
 
@@ -2123,7 +2359,7 @@ with tabs[3]:
         st.caption("Select your skills to reveal matched career pathways and missing competency requirements.")
         available_skills = get_all_skills()
         selected_skills = st.multiselect(
-            "🛠️ Select Your Existing Skills & Subjects",
+            t("car_skills"),
             options=available_skills,
             default=[],
             key="tab_skill_select"
@@ -2153,8 +2389,8 @@ with tabs[3]:
 # TAB 5: 🎤 MOCK INTERVIEW
 # =========================================================================
 with tabs[4]:
-    st.markdown("### 🎤 AI-Powered Mock Interview Simulator")
-    st.caption("Prepare for JKSSB, KAS, campus placements, and viva examinations with real-time AI rubric scoring.")
+    st.markdown(t("iv_heading"))
+    st.caption(t("iv_sub"))
 
     if "interview_session" not in st.session_state:
         st.session_state.interview_session = None
@@ -2163,7 +2399,7 @@ with tabs[4]:
 
     if st.session_state.interview_session is None:
         template_id = st.selectbox(
-            "🎯 Select Interview Category",
+            t("iv_category"),
             options=list(templates.keys()),
             format_func=lambda x: f"{templates[x].get('title', x)}",
             key="tab_iv_template"
@@ -2174,7 +2410,7 @@ with tabs[4]:
             st.markdown(f"**{tmpl.get('title', template_id)}** — {tmpl.get('description', '')}")
             st.caption(f"📋 {len(tmpl.get('rounds', []))} Rounds · {tmpl.get('questions_per_round', 3)} Questions/Round · Difficulty: **{tmpl.get('difficulty', 'moderate').upper()}**")
 
-        if st.button("▶️ Launch Mock Interview Session", key="btn_launch_iv_tab"):
+        if st.button(t("iv_btn_launch"), key="btn_launch_iv_tab"):
             session = start_interview(template_id)
             st.session_state.interview_session = session
             first_q = get_next_question(session)
@@ -2224,11 +2460,11 @@ with tabs[4]:
                 st.markdown(f"#### Round {current_q.get('round_number', 0)+1}: {current_q.get('round_name', '')}")
                 st.markdown(f"❓ **Question:** {current_q.get('question', 'Loading...')}")
 
-                answer = st.text_area("Your Response (Speak your thoughts or type clearly):", key=f"iv_ans_tab_{progress.get('completed_questions', 0)}", height=130)
+                answer = st.text_area(t("iv_response_lbl"), key=f"iv_ans_tab_{progress.get('completed_questions', 0)}", height=130)
 
                 btn_c1, btn_c2 = st.columns([1, 1])
                 with btn_c1:
-                    if st.button("📤 Submit Response for AI Evaluation", key="btn_sub_iv_tab"):
+                    if st.button(t("iv_btn_submit"), key="btn_sub_iv_tab"):
                         if answer.strip():
                             with st.spinner("AI Examiner is grading your response against the rubric..."):
                                 updated_session = submit_answer(session, answer.strip())
@@ -2244,7 +2480,7 @@ with tabs[4]:
                         else:
                             st.warning("Please provide your answer before submitting.")
                 with btn_c2:
-                    if st.button("⏹️ Conclude Session Early", key="btn_end_iv_tab"):
+                    if st.button(t("iv_btn_end"), key="btn_end_iv_tab"):
                         session["status"] = "completed"
                         st.session_state.interview_session = session
                         st.rerun()
@@ -2254,12 +2490,12 @@ with tabs[4]:
 # TAB 6: 📄 RESUME STUDIO
 # =========================================================================
 with tabs[5]:
-    st.markdown("### 📄 AI Resume Auditor & Job-Fit Analyzer")
-    st.caption("Upload your CV/resume in PDF format for automated rubric scoring, formatting critique, and role-match analysis.")
+    st.markdown(t("res_heading"))
+    st.caption(t("res_sub"))
 
-    uploaded_resume = st.file_uploader("📎 Upload Resume PDF", type=["pdf"], key="tab_resume_upload")
+    uploaded_resume = st.file_uploader(t("res_upload"), type=["pdf"], key="tab_resume_upload")
     target_role = st.selectbox(
-        "🎯 Select Desired Career / Target Role",
+        t("res_role"),
         ["None"] + get_available_target_roles(),
         key="tab_resume_role"
     )
@@ -2323,8 +2559,8 @@ with tabs[5]:
 # TAB 7: 🔬 SYSTEM ARCHITECTURE & ENGINEERING BENCHMARKS
 # =========================================================================
 with tabs[6]:
-    st.markdown("### 🔬 System Architecture & Engineering Verification")
-    st.caption("Technical Architecture, 2G Edge Inverted Index, Multi-Model Router & Official Gazette Knowledge Base · SIH25094")
+    st.markdown(t("arch_heading"))
+    st.caption(t("arch_sub"))
 
     # 1. ARCHITECTURE HIGHLIGHT PILLS
     st.markdown("""
