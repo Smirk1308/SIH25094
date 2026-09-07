@@ -12,21 +12,21 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 MODELS = {
     "simple": {
         "id": "gemini-3.5-flash-lite",
-        "max_tokens": 2048,
+        "max_tokens": 2500,
         "label": "Fast",
         "emoji": "⚡",
         "daily_limit": 1500,
     },
     "medium": {
-        "id": "gemini-3.5-flash",
-        "max_tokens": 3072,
+        "id": "gemini-3.6-flash",
+        "max_tokens": 3500,
         "label": "Standard",
         "emoji": "🎯",
         "daily_limit": 1500,
     },
     "complex": {
-        "id": "gemini-3.7-flash",
-        "max_tokens": 4096,
+        "id": "gemini-3.6-flash",
+        "max_tokens": 4500,
         "label": "Deep Analysis",
         "emoji": "🧠",
         "daily_limit": 1500,
@@ -34,7 +34,14 @@ MODELS = {
 }
 
 # In-family fallback sequence for Gemini models if a specific model encounters quota (429) or spikes (503)
-GEMINI_FALLBACK_POOL = ["gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-3.7-flash", "gemini-3.5-flash"]
+GEMINI_FALLBACK_POOL = [
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    "gemini-flash-latest",
+    "gemini-3.7-flash",
+    "gemini-3.5-flash",
+]
 
 # Keywords that signal query complexity
 COMPLEX_SIGNALS = [
@@ -140,7 +147,7 @@ def get_routed_model_info(query: str = "", history_length: int = 0) -> dict:
     if hasattr(st, "session_state") and st.session_state.get("selected_language", "English") != "English":
         is_multi = True
     if is_multi:
-        max_tokens = max(max_tokens, 3500)
+        max_tokens = max(max_tokens, 4000)
 
     if hasattr(st, "session_state"):
         st.session_state.active_model_tier = tier
