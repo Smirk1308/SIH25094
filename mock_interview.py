@@ -347,23 +347,24 @@ def evaluate_answer(question: str, answer: str, rubric: Dict, round_name: str) -
     """
     Uses Gemini LLM to evaluate the answer against the rubric.
     """
-    if not answer or not answer.strip():
+    clean_ans = answer.strip()
+    if not clean_ans or len(clean_ans) < 4 or clean_ans.lower() in ["idk", "no", "pass", "don't know", "dont know", "skip", "none", "na"]:
         return {
             "scores": {k: 0 for k in rubric.keys()},
             "total_score": 0,
             "max_score": 100,
-            "feedback": "No answer provided.",
-            "strengths": [],
-            "improvements": ["Provide a complete answer."]
+            "feedback": "No meaningful answer provided. To score points, provide a clear, detailed explanation addressing the question.",
+            "strengths": ["None provided"],
+            "improvements": ["Answer the question directly with relevant subject concepts."]
         }
 
     default_result = {
-        "scores": {k: int(v * 0.6) for k, v in rubric.items()},
-        "total_score": 60,
+        "scores": {k: 0 for k in rubric.keys()},
+        "total_score": 0,
         "max_score": 100,
-        "feedback": "Answer received. (Fallback evaluation used due to LLM error).",
-        "strengths": ["Answered the question"],
-        "improvements": ["Add more specific details"]
+        "feedback": "AI evaluation service could not evaluate this response. Please retry submitting.",
+        "strengths": ["Response recorded"],
+        "improvements": ["Ensure internet connection is active for real-time AI scoring."]
     }
 
     if model_router is None:
@@ -373,28 +374,40 @@ def evaluate_answer(question: str, answer: str, rubric: Dict, round_name: str) -
         llm = model_router.get_llm("Evaluate interview answer", 0)
         
         system_prompt = f"""
-You are an expert interviewer evaluating a candidate's answer for the '{round_name}' round.
-Evaluate the answer based on the following rubric, assigning scores up to the maximum weight for each dimension:
+You are an expert interviewer and examiner rigorously grading a candidate's answer for the '{round_name}' round.
+
+GRADING CRITERIA & SCORING RUBRIC:
 {json.dumps(rubric, indent=2)}
 
-Question: {question}
-Answer: {answer}
+EXAM QUESTION: {question}
+CANDIDATE ANSWER: {answer}
 
-Provide your evaluation in STRICT JSON format with the following structure:
+STRICT EVALUATION RULES:
+1. FACTUAL ACCURACY IS PARAMOUNT:
+   - If the candidate's answer is factually incorrect, completely irrelevant, nonsensical, or wrong, award 0 points for 'accuracy' and 0 points for 'completeness'.
+   - Do NOT give free participation marks for wrong or hallucinated answers.
+   - For partially correct answers, score strictly in proportion to the fraction of correct facts covered.
+2. FEEDBACK & LEARNING:
+   - In 'feedback', clearly explain what was correct, what was incorrect or missing, and state the ideal key concepts.
+   - In 'strengths', list 1-2 genuine, specific technical or conceptual strengths. If the answer was wrong, state ["No valid subject knowledge demonstrated"].
+   - In 'improvements', give 1-3 specific, actionable corrections (e.g. key terms, algorithms, or facts they should study).
+
+OUTPUT FORMAT:
+Respond in STRICT, valid JSON ONLY (no surrounding text or markdown formatting except the json block):
 {{
     "scores": {{
-        "accuracy": <int>,
-        "clarity": <int>,
-        "completeness": <int>,
-        "confidence": <int>
+        "accuracy": <int between 0 and {rubric.get('accuracy', 40)}>,
+        "clarity": <int between 0 and {rubric.get('clarity', 30)}>,
+        "completeness": <int between 0 and {rubric.get('completeness', 20)}>,
+        "confidence": <int between 0 and {rubric.get('confidence', 10)}>
     }},
-    "feedback": "<string: detailed overall feedback>",
-    "strengths": ["<string>", "<string>"],
-    "improvements": ["<string>", "<string>"]
+    "feedback": "<concise, professional, specific critique explaining errors and ideal concepts>",
+    "strengths": ["<specific strength 1>", "<specific strength 2>"],
+    "improvements": ["<specific improvement 1>", "<specific improvement 2>"]
 }}
 """
         messages = [
-            SystemMessage(content="You are a strict JSON-producing assistant."),
+            SystemMessage(content="You are a strict, objective, expert examiner who returns only valid JSON."),
             HumanMessage(content=system_prompt)
         ]
         
@@ -412,7 +425,7 @@ Provide your evaluation in STRICT JSON format with the following structure:
         else:
             content = str(response.content)
         
-        # Clean up JSON if necessary
+        # Clean up JSON formatting
         content = content.strip()
         if content.startswith("```json"):
             content = content[7:]
@@ -423,11 +436,23 @@ Provide your evaluation in STRICT JSON format with the following structure:
             
         result = json.loads(content.strip())
         
-        # Calculate total
-        total = sum(result.get("scores", {}).values())
-        result["total_score"] = total
+        # Ensure scores exist and clamp to rubric limits
+        scores = {}
+        for k, max_v in rubric.items():
+            s = int(result.get("scores", {}).get(k, 0))
+            scores[k] = max(0, min(s, max_v))
+            
+        result["scores"] = scores
+        result["total_score"] = sum(scores.values())
         result["max_score"] = 100
         
+        if "feedback" not in result or not result["feedback"]:
+            result["feedback"] = "Evaluation completed."
+        if "strengths" not in result:
+            result["strengths"] = []
+        if "improvements" not in result:
+            result["improvements"] = []
+            
         return result
         
     except Exception as e:

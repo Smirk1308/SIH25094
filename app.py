@@ -1345,6 +1345,25 @@ with tabs[4]:
                 text=f"Round: {progress.get('current_round_name', 'N/A')} | Question {progress.get('completed_questions', 0)+1} of {progress.get('total_questions', '?')}"
             )
 
+            # Display real-time feedback for the previous question if available
+            if session.get("responses"):
+                last_resp = session["responses"][-1]
+                sb = last_resp.get("score_breakdown", {})
+                last_score = sb.get("total_score", 0)
+                badge_color = "#27AE60" if last_score >= 70 else ("#E67E22" if last_score >= 40 else "#C0392B")
+                with st.expander(f"💡 Evaluation for Question {len(session['responses'])}: Score {last_score}/100", expanded=True):
+                    st.markdown(f"**Score:** <span style='color:{badge_color};font-weight:800;font-size:18px;'>{last_score}/100</span>", unsafe_allow_html=True)
+                    scores_dict = sb.get("scores", {})
+                    if scores_dict:
+                        cols = st.columns(len(scores_dict))
+                        for col, (k, v) in zip(cols, scores_dict.items()):
+                            col.metric(k.capitalize(), f"{v} pts")
+                    st.markdown(f"**📝 Examiner Feedback:** {last_resp.get('feedback', 'Evaluated.')}")
+                    if sb.get("strengths") and sb["strengths"] != ["None provided"] and sb["strengths"] != ["No valid subject knowledge demonstrated"]:
+                        st.markdown(f"**💪 Strengths:** {', '.join(sb['strengths'])}")
+                    if sb.get("improvements"):
+                        st.markdown(f"**🎯 Actionable Corrections:** {', '.join(sb['improvements'])}")
+
             current_q = st.session_state.get("current_iv_question")
             if current_q:
                 st.markdown(f"#### Round {current_q.get('round_number', 0)+1}: {current_q.get('round_name', '')}")
@@ -1356,22 +1375,17 @@ with tabs[4]:
                 with btn_c1:
                     if st.button("📤 Submit Response for AI Evaluation", key="btn_sub_iv_tab"):
                         if answer.strip():
-                            updated_session = submit_answer(session, answer.strip())
-                            st.session_state.interview_session = updated_session
-
-                            if updated_session.get("responses"):
-                                last = updated_session["responses"][-1]
-                                score = last.get("total_score", last.get("score_breakdown", {}).get("total_score", "N/A"))
-                                feedback = last.get("feedback", "")
-                                st.success(f"Evaluated Score: {score}/100 — {feedback[:200]}")
-
-                            next_q = get_next_question(updated_session)
-                            if next_q:
-                                st.session_state.current_iv_question = next_q
-                            else:
-                                updated_session["status"] = "completed"
+                            with st.spinner("AI Examiner is grading your response against the rubric..."):
+                                updated_session = submit_answer(session, answer.strip())
                                 st.session_state.interview_session = updated_session
-                            st.rerun()
+
+                                next_q = get_next_question(updated_session)
+                                if next_q:
+                                    st.session_state.current_iv_question = next_q
+                                else:
+                                    updated_session["status"] = "completed"
+                                    st.session_state.interview_session = updated_session
+                                st.rerun()
                         else:
                             st.warning("Please provide your answer before submitting.")
                 with btn_c2:
