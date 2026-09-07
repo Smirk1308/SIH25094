@@ -940,7 +940,7 @@ st.markdown(f"""
     </div>
     <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
       <span style="background:rgba(245,166,35,0.25); color:#F5A623; font-size:10px; font-weight:800; padding:2px 8px; border-radius:6px; border:1px solid rgba(245,166,35,0.4);">
-        🏆 SIH 2026 FINALIST · PS SIH25094
+        SIH 2026 · PS SIH25094
       </span>
       <span style="background:rgba(255,255,255,0.12); color:#E2E8F0; font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px;">
         NEP 2020 COMPLIANT
@@ -1970,7 +1970,7 @@ with tabs[6]:
             Department of Computer Science & Engineering · Batch of 2027
           </div>
           <div style="font-size:11.5px;color:#1B3A8C;font-weight:700;margin-top:4px;">
-            Smart India Hackathon 2026 Grand Finalist · Problem Statement ID: SIH25094
+            Smart India Hackathon 2026 · Problem Statement ID: SIH25094
           </div>
         </div>
         <div style="text-align:right;">
