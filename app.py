@@ -1630,13 +1630,13 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # Initialize active model on first load
-if "selected_model" not in st.session_state or st.session_state.selected_model in ["openai/gpt-oss-20b", "llama3-8b-8192", "llama-3.3-70b-versatile"]:
+if "selected_model" not in st.session_state or st.session_state.selected_model in ["openai/gpt-oss-20b", "llama3-8b-8192", "llama-3.3-70b-versatile", "gemini-3.5-flash"]:
     if google_api_key:
-        st.session_state.selected_model = "gemini-3.5-flash"
+        st.session_state.selected_model = "gemini-3.6-flash"
     elif groq_client:
         st.session_state.selected_model = get_best_groq_model(groq_client)
     else:
-        st.session_state.selected_model = "gemini-3.5-flash"
+        st.session_state.selected_model = "gemini-3.6-flash"
 
 # Pre-load & auto-sync documents from /docs with ChromaDB (indexes new files, purges deleted)
 if "auto_indexed_once" not in st.session_state:
@@ -2723,7 +2723,7 @@ with tabs[6]:
           <div style="font-size:10px;font-weight:800;color:#E8762C;letter-spacing:0.5px;">TIER 3 · ROUTING GATEWAY</div>
           <div style="font-size:13px;font-weight:700;color:#0D2137;margin:4px 0 6px;">Model Complexity Router</div>
           <div style="font-size:11px;color:#64748B;line-height:1.4;">
-            <code>model_router.py</code> classifies query complexity: Fast (Flash-Lite), Standard (Flash), Deep Analysis (3.7-Flash).
+            <code>model_router.py</code> dynamically balances across 6 active Gemini 3.x models: Fast (Flash-Lite 3.1 & 3.5), Standard (Flash 3.5 & 3.6), Deep Analysis (Flash 3.7 & 3.8 Flagship).
           </div>
         </div>
         <div style="background:#F8FAFC;border:1.5px solid #8E44AD;border-radius:10px;padding:12px;">

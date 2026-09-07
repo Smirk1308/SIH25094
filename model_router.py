@@ -8,39 +8,125 @@ import os
 import streamlit as st
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-# Model tier definitions (aligned with Google AI Studio free tier limits & dynamic capability)
+# Complete active Gemini 3.x Fleet specifications aligned with user's Google AI Studio free tier limits
+MODEL_FLEET = {
+    "gemini-3.8-flash": {
+        "tier": "complex",
+        "label": "Flash 3.8 Flagship",
+        "emoji": "🧠",
+        "daily_limit": 20,
+        "rpm_limit": 5,
+        "max_tokens": 4500,
+        "supports_thinking": True,
+        "description": "Deep multi-parameter reasoning & flagship analysis",
+    },
+    "gemini-3.6-flash": {
+        "tier": "medium",
+        "label": "Flash 3.6 Pro",
+        "emoji": "🎯",
+        "daily_limit": 20,
+        "rpm_limit": 5,
+        "max_tokens": 3500,
+        "supports_thinking": False,
+        "description": "Fast, high-fidelity reasoning & standard queries",
+    },
+    "gemini-3.5-flash": {
+        "tier": "medium",
+        "label": "Flash 3.5 Standard",
+        "emoji": "🎯",
+        "daily_limit": 20,
+        "rpm_limit": 5,
+        "max_tokens": 3500,
+        "supports_thinking": False,
+        "description": "High stability general knowledge & document QA",
+    },
+    "gemini-3.7-flash": {
+        "tier": "complex",
+        "label": "Flash 3.7 Reasoning",
+        "emoji": "🧠",
+        "daily_limit": 20,
+        "rpm_limit": 5,
+        "max_tokens": 4500,
+        "supports_thinking": True,
+        "description": "Advanced analytical reasoning & step-by-step logic",
+    },
+    "gemini-3.5-flash-lite": {
+        "tier": "simple",
+        "label": "Flash-Lite 3.5",
+        "emoji": "⚡",
+        "daily_limit": 500,
+        "rpm_limit": 15,
+        "max_tokens": 2500,
+        "supports_thinking": False,
+        "description": "Sub-second lightweight conversational responses",
+    },
+    "gemini-3.1-flash-lite": {
+        "tier": "simple",
+        "label": "Flash-Lite 3.1",
+        "emoji": "⚡",
+        "daily_limit": 500,
+        "rpm_limit": 15,
+        "max_tokens": 2500,
+        "supports_thinking": False,
+        "description": "High-throughput 500 RPD rapid information retrieval",
+    },
+}
+
+# Simplified tier mapping for backwards compatibility
 MODELS = {
     "simple": {
         "id": "gemini-3.5-flash-lite",
         "max_tokens": 2500,
-        "label": "Fast",
+        "label": "Fast (Flash-Lite)",
         "emoji": "⚡",
-        "daily_limit": 1500,
+        "daily_limit": 500,
     },
     "medium": {
         "id": "gemini-3.6-flash",
         "max_tokens": 3500,
-        "label": "Standard",
+        "label": "Standard (Flash)",
         "emoji": "🎯",
-        "daily_limit": 1500,
+        "daily_limit": 20,
     },
     "complex": {
-        "id": "gemini-3.6-flash",
+        "id": "gemini-3.8-flash",
         "max_tokens": 4500,
-        "label": "Deep Analysis",
+        "label": "Deep Analysis (Flash 3.8)",
         "emoji": "🧠",
-        "daily_limit": 1500,
+        "daily_limit": 20,
     },
 }
 
-# In-family fallback sequence for Gemini models if a specific model encounters quota (429) or spikes (503)
+# Ordered candidate pools per complexity tier to balance load
+TIER_CANDIDATE_POOLS = {
+    "simple": [
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+    ],
+    "medium": [
+        "gemini-3.6-flash",
+        "gemini-3.5-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+    ],
+    "complex": [
+        "gemini-3.8-flash",
+        "gemini-3.6-flash",
+        "gemini-3.7-flash",
+        "gemini-3.5-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+    ],
+}
+
+# Resilient fallback sequence across all active models in the fleet
 GEMINI_FALLBACK_POOL = [
+    "gemini-3.8-flash",
     "gemini-3.6-flash",
+    "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
     "gemini-3.1-flash-lite",
-    "gemini-flash-latest",
     "gemini-3.7-flash",
-    "gemini-3.5-flash",
 ]
 
 # Keywords that signal query complexity
@@ -57,10 +143,10 @@ COMPLEX_SIGNALS = [
 ]
 
 MEDIUM_SIGNALS = [
-    "eligible", "qualify", "should i", "recommend", "suggest",
+    "eligible", "eligib", "qualify", "should i", "recommend", "suggest",
     "difference between", "which is better", "compare", "options for",
-    "options i have", "what can i apply", "how to apply", "what documents",
-    "college", "seats", "quota", "reservation", "merit", "fee",
+    "options i have", "what can i apply", "how to apply", "what documents", "document", "documents",
+    "college", "seats", "quota", "reservation", "merit", "fee", "jkcet", "neet", "jee", "criteria",
     # Urdu medium signals
     "کالج", "داخلہ", "رہنمائی", "موازنہ", "کونسا بہتر", "دستاویزات", "درخواست کیسے",
     # Hindi medium signals
@@ -111,38 +197,78 @@ def _init_usage():
     """Initialize per-model usage tracking in session state."""
     if hasattr(st, "session_state"):
         if "model_usage" not in st.session_state:
-            st.session_state.model_usage = {
-                tier: 0 for tier in MODELS
-            }
+            st.session_state.model_usage = {m: 0 for m in MODEL_FLEET}
+            for tier in ["simple", "medium", "complex"]:
+                st.session_state.model_usage[tier] = 0
         if "active_model_tier" not in st.session_state:
             st.session_state.active_model_tier = "simple"
         if "active_model_id" not in st.session_state:
-            st.session_state.active_model_id = MODELS["simple"]["id"]
-
-
-def _get_fallback_tier(tier: str) -> str:
-    """Return next lower tier if current tier is exhausted."""
-    order = ["complex", "medium", "simple"]
-    idx = order.index(tier)
-    return order[idx + 1] if idx + 1 < len(order) else "simple"
+            st.session_state.active_model_id = "gemini-3.5-flash-lite"
+        if "exhausted_models" not in st.session_state:
+            st.session_state.exhausted_models = set()
 
 
 def get_routed_model_info(query: str = "", history_length: int = 0) -> dict:
-    """Return model tier, ID, max tokens, and metadata for direct google.genai client."""
+    """Return model tier, ID, max tokens, and metadata dynamically balanced across the active fleet."""
     _init_usage()
     tier = classify_complexity(query, history_length)
-    while tier != "simple" and hasattr(st, "session_state"):
-        usage = st.session_state.model_usage.get(tier, 0)
-        limit = MODELS[tier]["daily_limit"]
-        if usage >= int(limit * 0.85):   # back off at 85% of limit
-            tier = _get_fallback_tier(tier)
-        else:
-            break
-    model_cfg = MODELS[tier]
+
+    candidates = TIER_CANDIDATE_POOLS.get(tier, TIER_CANDIDATE_POOLS["simple"])
+    exhausted = st.session_state.get("exhausted_models", set()) if hasattr(st, "session_state") else set()
+    usage = st.session_state.get("model_usage", {}) if hasattr(st, "session_state") else {}
+
+    selected_model = None
+
+    # Filter out models that are known to be exhausted (429) or reached safety limit in this session
+    healthy_candidates = []
+    for cand in candidates:
+        if cand in exhausted:
+            continue
+        cand_limit = MODEL_FLEET[cand]["daily_limit"]
+        used = usage.get(cand, 0)
+        safety_buf = 3 if cand_limit <= 20 else 50
+        if used < (cand_limit - safety_buf):
+            healthy_candidates.append(cand)
+
+    if healthy_candidates:
+        if tier == "simple":
+            # Round-robin / balance between 3.5-lite and 3.1-lite based on least used
+            selected_model = min(healthy_candidates, key=lambda m: usage.get(m, 0))
+        elif tier == "medium":
+            # Prefer 20 RPD models (3.6-flash, 3.5-flash) if available, otherwise lite models
+            standard_cands = [m for m in healthy_candidates if MODEL_FLEET[m]["tier"] == "medium"]
+            if standard_cands:
+                selected_model = min(standard_cands, key=lambda m: usage.get(m, 0))
+            else:
+                selected_model = min(healthy_candidates, key=lambda m: usage.get(m, 0))
+        else:  # complex
+            # Prefer flagship reasoning models (3.8-flash, 3.6-flash, 3.7-flash)
+            flagship_cands = [m for m in healthy_candidates if MODEL_FLEET[m]["tier"] in ["complex", "medium"]]
+            if flagship_cands:
+                selected_model = min(flagship_cands, key=lambda m: usage.get(m, 0))
+            else:
+                selected_model = min(healthy_candidates, key=lambda m: usage.get(m, 0))
+    else:
+        # Emergency fail-safe: choose any non-exhausted lite model with massive 500 RPD
+        for lite in ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]:
+            if lite not in exhausted:
+                selected_model = lite
+                break
+        if not selected_model:
+            selected_model = "gemini-3.5-flash-lite"
+
+    model_info = MODEL_FLEET.get(selected_model, MODEL_FLEET["gemini-3.5-flash-lite"])
+
+    # Determine token budget based on query complexity tier
+    tier_token_budgets = {
+        "simple": 2500,
+        "medium": 3500,
+        "complex": 4500,
+    }
+    max_tokens = tier_token_budgets.get(tier, 3500)
 
     # Non-English / Multilingual responses consume 3-4x more tokens per word due to subword byte encoding.
-    # We guarantee a generous minimum token allocation of 3,500 tokens so Urdu/Hindi/Kashmiri never truncates.
-    max_tokens = model_cfg["max_tokens"]
+    # We guarantee a generous minimum token allocation of 4,000 tokens so Urdu/Hindi/Kashmiri never truncates.
     is_multi = is_multilingual_query(query)
     if hasattr(st, "session_state") and st.session_state.get("selected_language", "English") != "English":
         is_multi = True
@@ -151,45 +277,25 @@ def get_routed_model_info(query: str = "", history_length: int = 0) -> dict:
 
     if hasattr(st, "session_state"):
         st.session_state.active_model_tier = tier
-        st.session_state.active_model_id = model_cfg["id"]
-        st.session_state.model_usage[tier] = st.session_state.model_usage.get(tier, 0) + 1
+        st.session_state.active_model_id = selected_model
+        st.session_state.model_usage[selected_model] = usage.get(selected_model, 0) + 1
+        st.session_state.model_usage[tier] = usage.get(tier, 0) + 1
+
     return {
         "tier": tier,
-        "model_id": model_cfg["id"],
+        "model_id": selected_model,
         "max_tokens": max_tokens,
-        "label": model_cfg["label"],
-        "emoji": model_cfg["emoji"],
+        "label": model_info["label"],
+        "emoji": model_info["emoji"],
     }
 
 
 def get_llm(query: str = "", history_length: int = 0):
     """
     Returns the appropriate LangChain LLM for this query.
-    Automatically falls back to lower tiers if usage limits approached.
+    Automatically load balances across the Gemini 3.x fleet.
     """
-    _init_usage()
-
-    tier = classify_complexity(query, history_length)
-
-    # Check usage — if this tier is near its daily limit, fall back
-    while tier != "simple" and hasattr(st, "session_state"):
-        usage = st.session_state.model_usage.get(tier, 0)
-        limit = MODELS[tier]["daily_limit"]
-        if usage >= int(limit * 0.85):   # back off at 85% of limit
-            tier = _get_fallback_tier(tier)
-        else:
-            break
-
-    model_cfg = MODELS[tier]
-
-    if hasattr(st, "session_state"):
-        # Store what model is active for sidebar display
-        st.session_state.active_model_tier = tier
-        st.session_state.active_model_id = model_cfg["id"]
-
-        # Increment usage counter
-        st.session_state.model_usage[tier] = \
-            st.session_state.model_usage.get(tier, 0) + 1
+    model_info = get_routed_model_info(query, history_length)
 
     import api_key_helper
 
@@ -198,9 +304,9 @@ def get_llm(query: str = "", history_length: int = 0):
 
     if google_api_key:
         llm_kwargs = dict(
-            model=model_cfg["id"],
+            model=model_info["model_id"],
             google_api_key=google_api_key,
-            max_output_tokens=model_cfg["max_tokens"],
+            max_output_tokens=model_info["max_tokens"],
             temperature=0.2,
         )
         return ChatGoogleGenerativeAI(**llm_kwargs)
@@ -211,67 +317,71 @@ def get_llm(query: str = "", history_length: int = 0):
             model_name="qwen/qwen3.8-27b",
             groq_api_key=groq_api_key,
             temperature=0.2,
-            max_tokens=model_cfg["max_tokens"],
+            max_tokens=model_info["max_tokens"],
         )
 
     # Fallback if no keys configured
     return ChatGoogleGenerativeAI(
-        model=model_cfg["id"],
+        model=model_info["model_id"],
         google_api_key="dummy_key",
-        max_output_tokens=model_cfg["max_tokens"],
+        max_output_tokens=model_info["max_tokens"],
         temperature=0.2,
     )
 
 
 def render_model_badge():
-    """Render the active model indicator in the sidebar."""
+    """Render the active model indicator and fleet usage monitor in the sidebar."""
     _init_usage()
     tier = st.session_state.get("active_model_tier", "simple") if hasattr(st, "session_state") else "simple"
-    model_id = st.session_state.get("active_model_id", MODELS["simple"]["id"]) if hasattr(st, "session_state") else MODELS["simple"]["id"]
-    cfg = MODELS.get(tier, MODELS["simple"])
-
-    usage_lines = []
-    if hasattr(st, "session_state") and "model_usage" in st.session_state:
-        for t, cnt in st.session_state.model_usage.items():
-            lim = MODELS[t]["daily_limit"]
-            pct = int((cnt / lim) * 100)
-            bar = "█" * (pct // 10) + "░" * (10 - pct // 10)
-            usage_lines.append(
-                f"{MODELS[t]['emoji']} `{MODELS[t]['id'].split('-', 1)[1]}` "
-                f"{bar} {cnt}/{lim}"
-            )
+    model_id = st.session_state.get("active_model_id", "gemini-3.5-flash-lite") if hasattr(st, "session_state") else "gemini-3.5-flash-lite"
+    model_info = MODEL_FLEET.get(model_id, MODEL_FLEET["gemini-3.5-flash-lite"])
+    exhausted = st.session_state.get("exhausted_models", set()) if hasattr(st, "session_state") else set()
+    usage = st.session_state.get("model_usage", {}) if hasattr(st, "session_state") else {}
 
     st.sidebar.markdown(f"""
     <div style="background:rgba(255,255,255,0.08);border-radius:8px;
          padding:10px 12px;margin-top:8px;border:1px solid rgba(255,255,255,0.12);">
       <div style="color:#F5A623;font-size:9px;font-weight:700;
-           letter-spacing:1px;margin-bottom:6px;">ACTIVE MODEL</div>
+           letter-spacing:1px;margin-bottom:6px;">ACTIVE MODEL (FLEET BALANCED)</div>
       <div style="color:white;font-size:12px;font-weight:700;">
-        {cfg['emoji']} {cfg['label']} Mode
+        {model_info['emoji']} {model_info['label']}
       </div>
-      <div style="color:#AEC6D0;font-size:9px;margin-top:2px;">
-        {model_id}
+      <div style="color:#AEC6D0;font-size:9.5px;margin-top:2px;">
+        ID: <code>{model_id}</code>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
-    with st.sidebar.expander("📊 Model Usage Today"):
-        for line in usage_lines:
-            st.markdown(line)
+    with st.sidebar.expander("📊 Fleet Quota Monitor (6 Models)"):
+        st.markdown("<div style='font-size:11px;color:#94A3B8;margin-bottom:6px;'>Dynamically balanced across your AI Studio allocations:</div>", unsafe_allow_html=True)
+        for mid, mcfg in MODEL_FLEET.items():
+            used = usage.get(mid, 0)
+            lim = mcfg["daily_limit"]
+            pct = min(100, int((used / lim) * 100))
+            bar = "█" * (pct // 10) + "░" * (10 - pct // 10)
+            status_tag = ""
+            if mid in exhausted:
+                status_tag = " <span style='color:#EF4444;font-size:9px;font-weight:700;'>[EXHAUSTED]</span>"
+            elif mid == model_id:
+                status_tag = " <span style='color:#10B981;font-size:9px;font-weight:700;'>[ACTIVE]</span>"
+            st.markdown(
+                f"<div style='font-size:11px;margin-bottom:4px;'>"
+                f"{mcfg['emoji']} <b>{mcfg['label']}</b>{status_tag}<br>"
+                f"<code style='font-size:10px;'>{bar} {used}/{lim} RPD ({pct}%)</code>"
+                f"</div>",
+                unsafe_allow_html=True
+            )
 
 
 def render_query_info(query: str, history_length: int = 0):
     """Show which model was selected and why — shown above the answer."""
     tier = classify_complexity(query, history_length)
-    cfg = MODELS[tier]
     actual_tier = st.session_state.get("active_model_tier", tier) if hasattr(st, "session_state") else tier
-    actual_cfg = MODELS.get(actual_tier, cfg)
-
-    note = ""
-    if actual_tier != tier:
-        note = f" *(downgraded from {cfg['label']} — quota)*"
+    actual_model_id = st.session_state.get("active_model_id", "gemini-3.5-flash-lite") if hasattr(st, "session_state") else "gemini-3.5-flash-lite"
+    actual_cfg = MODEL_FLEET.get(actual_model_id, MODEL_FLEET["gemini-3.5-flash-lite"])
 
     st.caption(
-        f"{actual_cfg['emoji']} **{actual_cfg['label']} Mode** "
-        f"· `{actual_cfg['id']}`{note}"
+        f"{actual_cfg['emoji']} **{actual_cfg['label']}** "
+        f"· `{actual_model_id}` · Complexity: *{actual_tier.capitalize()}*"
     )
+

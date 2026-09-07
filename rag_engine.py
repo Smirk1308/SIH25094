@@ -749,6 +749,12 @@ Instructions:
                                     yield chunk.text
                             return
                         except Exception as try_err:
+                            err_str = str(try_err)
+                            if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "404" in err_str or "NOT_FOUND" in err_str:
+                                if hasattr(st, "session_state"):
+                                    if "exhausted_models" not in st.session_state:
+                                        st.session_state.exhausted_models = set()
+                                    st.session_state.exhausted_models.add(try_model)
                             logger.warning(f"Gemini streaming attempt on '{try_model}' failed: {try_err}. Checking next candidate in pool...")
                             if gemini_streamed_any:
                                 return
@@ -818,6 +824,12 @@ Instructions:
                         }
                     except Exception as e:
                         last_gemini_err = e
+                        err_str = str(e)
+                        if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "404" in err_str or "NOT_FOUND" in err_str:
+                            if hasattr(st, "session_state"):
+                                if "exhausted_models" not in st.session_state:
+                                    st.session_state.exhausted_models = set()
+                                st.session_state.exhausted_models.add(try_model)
                         logger.warning(f"Gemini attempt with model '{try_model}' failed: {e}. Checking next candidate in pool...")
                         continue
 
