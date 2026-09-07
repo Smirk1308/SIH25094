@@ -329,7 +329,7 @@ TRANSLATIONS = {
 
 def t(key: str, default: str = "") -> str:
     """Retrieve localized string for the currently active language with safe fallback."""
-    active = st.session_state.get("selected_language", "English")
+    active = st.session_state.get("selected_language", st.session_state.get("app_lang_select", "English"))
     lang_dict = TRANSLATIONS.get(active, TRANSLATIONS["English"])
     return lang_dict.get(key, TRANSLATIONS["English"].get(key, default or key))
 
@@ -496,12 +496,24 @@ html, body, [class*="css"] {
 }
 
 /* Global BaseWeb popovers (dropdown options for selectbox) */
-[data-baseweb="popover"],
-[data-baseweb="popover"] > div,
-[data-baseweb="menu"],
-ul[role="listbox"] {
+div[data-baseweb="popover"],
+div[data-baseweb="popover"] > div,
+div[data-baseweb="menu"],
+ul[data-baseweb="menu"],
+ul[role="listbox"],
+div[role="listbox"],
+div[id^="bui-"] {
     background-color: #FFFFFF !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
+    border: 1px solid #CBD5E1 !important;
+    box-shadow: 0 12px 36px rgba(13, 33, 55, 0.28) !important;
+    z-index: 10000005 !important;
+}
+
+div:has(> [data-baseweb="popover"]),
+div:has(> [data-baseweb="menu"]),
+div:has(> [role="listbox"]) {
+    z-index: 10000005 !important;
 }
 
 [data-baseweb="popover"] li,
@@ -512,13 +524,32 @@ ul[role="listbox"] li,
 ul[role="listbox"] li * {
     color: #0D2137 !important;
     -webkit-text-fill-color: #0D2137 !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
+}
+
+[data-baseweb="popover"] li,
+[data-baseweb="menu"] li,
+ul[role="listbox"] li {
+    min-height: 46px !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 10px 16px !important;
+    cursor: pointer !important;
+    font-size: 15px !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-baseweb="popover"] li:last-child,
+[data-baseweb="menu"] li:last-child,
+ul[role="listbox"] li:last-child {
+    border-bottom: none !important;
 }
 
 [data-baseweb="popover"] li:hover,
 [data-baseweb="menu"] li:hover,
+ul[role="listbox"] li:hover,
 ul[role="listbox"] li[aria-selected="true"] {
-    background-color: #EEF2F7 !important;
+    background-color: #EBF3FA !important;
     color: #1B3A8C !important;
     -webkit-text-fill-color: #1B3A8C !important;
 }
@@ -1321,7 +1352,7 @@ iframe[title*="streamlit_components_v1_html"] {
         visibility: visible !important;
         pointer-events: auto !important;
         box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5) !important;
-        z-index: 999999 !important;
+        z-index: 999990 !important;
     }
 }
 
@@ -1349,6 +1380,7 @@ footer { visibility: hidden; }
 # ==========================================
 # MODERN MOBILE & DRAWER SIDEBAR CONTROLLER
 # Touch-outside-to-hide + 100% Offscreen Retract
+# Protected against dropdown/selectbox dismissal
 # ==========================================
 components.html(
     """
@@ -1376,6 +1408,43 @@ components.html(
                 if (expanded !== null) return expanded === 'true';
                 const rect = sidebar.getBoundingClientRect();
                 return rect.width > 50 && rect.right > 50;
+            }
+
+            // Check if any dropdown menu, popover, or listbox is open on screen
+            function isDropdownOrMenuOpen() {
+                return !!(
+                    doc.querySelector('[data-baseweb="popover"]') ||
+                    doc.querySelector('[role="listbox"]') ||
+                    doc.querySelector('[data-baseweb="menu"]') ||
+                    doc.querySelector('div[id^="bui-"]')
+                );
+            }
+
+            // Check if an element belongs to the sidebar, a dropdown popover, or UI control
+            function isElementInsideSidebarOrControl(el) {
+                if (!el) return false;
+                const sidebar = doc.querySelector('[data-testid="stSidebar"]');
+                if (sidebar && sidebar.contains(el)) return true;
+
+                return !!(
+                    el.closest('[data-baseweb="popover"]') ||
+                    el.closest('[data-baseweb="menu"]') ||
+                    el.closest('[data-baseweb="select"]') ||
+                    el.closest('[role="listbox"]') ||
+                    el.closest('[role="option"]') ||
+                    el.closest('[role="combobox"]') ||
+                    el.closest('li[role="option"]') ||
+                    el.closest('.stSelectbox') ||
+                    el.closest('[data-testid="stSelectbox"]') ||
+                    el.closest('[data-testid="stSelectboxVirtualDropdown"]') ||
+                    el.closest('[data-testid="stVirtualDropdown"]') ||
+                    el.closest('[data-testid="stExpandSidebarButton"]') ||
+                    el.closest('[data-testid="stSidebarCollapsedControl"]') ||
+                    el.closest('[data-testid="collapsedControl"]') ||
+                    el.closest('[data-testid="stSidebarCollapseButton"]') ||
+                    el.closest('div[id^="bui-"]') ||
+                    el.closest('[data-baseweb]')
+                );
             }
 
             // 3. Synchronize sidebar visibility and backdrop
@@ -1411,6 +1480,9 @@ components.html(
             // 4. Helper to close sidebar safely with debounce and immediate retraction
             let lastCloseTime = 0;
             function closeSidebar() {
+                // If a dropdown or popover is open, DO NOT close the sidebar
+                if (isDropdownOrMenuOpen()) return;
+
                 const now = Date.now();
                 if (now - lastCloseTime < 400) return;
                 lastCloseTime = now;
@@ -1436,50 +1508,68 @@ components.html(
                 setTimeout(syncSidebar, 350);
             }
 
-            // 5. Tap or click on backdrop immediately dismisses sidebar
+            // 5. Tap or click on backdrop dismisses sidebar only when no dropdown is open
             backdrop.onclick = function(e) {
+                if (isDropdownOrMenuOpen()) {
+                    return; // Allow the click to dismiss the dropdown first
+                }
                 e.preventDefault();
                 e.stopPropagation();
                 closeSidebar();
             };
+
+            let touchStartX = 0;
+            let touchStartY = 0;
             backdrop.ontouchstart = function(e) {
+                if (e.touches && e.touches[0]) {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                }
+            };
+            backdrop.ontouchend = function(e) {
+                if (isDropdownOrMenuOpen()) {
+                    return; // Allow the touch to dismiss the dropdown first
+                }
+                if (e.changedTouches && e.changedTouches[0]) {
+                    const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
+                    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+                    if (dx > 15 || dy > 15) return; // User was scrolling, ignore
+                }
                 e.preventDefault();
                 e.stopPropagation();
                 closeSidebar();
             };
 
-            // 6. Global touch and click listener outside sidebar
-            if (!win.__edusetu_touch_bound) {
-                win.__edusetu_touch_bound = true;
-
-                const handleOutside = function(e) {
-                    const sidebar = doc.querySelector('[data-testid="stSidebar"]');
-                    if (!sidebar || !isSidebarOpen()) return;
-
-                    const target = e.target;
-                    if (!target) return;
-
-                    // If interacting inside sidebar, ignore
-                    if (sidebar.contains(target)) return;
-
-                    // If clicking expand button or collapse controls, let them toggle naturally
-                    if (target.closest('[data-testid="stExpandSidebarButton"]') || 
-                        target.closest('[data-testid="stSidebarCollapsedControl"]') ||
-                        target.closest('[data-testid="collapsedControl"]') ||
-                        target.closest('[data-testid="stSidebarCollapseButton"]')) {
-                        return;
-                    }
-
-                    // On mobile/tablets (<1024px) or on any touch gesture outside: dismiss sidebar
-                    const isMobileOrDrawer = (win.innerWidth <= 1024);
-                    if (isMobileOrDrawer || e.type === 'touchstart') {
-                        closeSidebar();
-                    }
-                };
-
-                doc.addEventListener('click', handleOutside, true);
-                doc.addEventListener('touchstart', handleOutside, { passive: true, capture: true });
+            // 6. Global outside click listener with full protection for selectboxes
+            if (win.__edusetu_outside_click_handler) {
+                doc.removeEventListener('click', win.__edusetu_outside_click_handler, false);
             }
+            if (win.__edusetu_outside_touch_handler) {
+                doc.removeEventListener('touchstart', win.__edusetu_outside_touch_handler, true);
+            }
+
+            const handleOutsideClick = function(e) {
+                const sidebar = doc.querySelector('[data-testid="stSidebar"]');
+                if (!sidebar || !isSidebarOpen()) return;
+
+                const target = e.target;
+                if (!target) return;
+
+                // If interacting inside sidebar or any dropdown/control, NEVER dismiss
+                if (isElementInsideSidebarOrControl(target)) return;
+
+                // If any dropdown menu or popover is open anywhere on the page, DO NOT dismiss
+                if (isDropdownOrMenuOpen()) return;
+
+                // On mobile/tablets (<1024px), dismiss sidebar when tapping main content outside
+                const isMobileOrDrawer = (win.innerWidth <= 1024);
+                if (isMobileOrDrawer) {
+                    closeSidebar();
+                }
+            };
+
+            win.__edusetu_outside_click_handler = handleOutsideClick;
+            doc.addEventListener('click', handleOutsideClick, false);
 
             // 7. Observer to sync backdrop and off-screen state when sidebar toggles
             if (!win.__edusetu_observer) {
