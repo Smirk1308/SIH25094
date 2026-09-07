@@ -16,6 +16,7 @@ High-End Competitive UI with:
 
 import os
 import streamlit as st
+import streamlit.components.v1 as components
 from dotenv import load_dotenv
 from groq import Groq
 from rag_engine import RAGEngine, DEFAULT_GROQ_MODEL, DOCS_DIR, CHROMA_DIR
@@ -387,9 +388,154 @@ ul[role="listbox"] li[aria-selected="true"] {
     background: linear-gradient(135deg, #F5A623, #E8762C);
 }
 
-[data-testid="collapsedControl"] {
-    display: block;
-    color: white;
+/* ========================================================= */
+/* ULTRA HIGH-VISIBILITY SIDEBAR COLLAPSE & EXPAND CONTROLS  */
+/* ========================================================= */
+
+/* Sidebar Header and Collapse button container */
+[data-testid="stSidebarHeader"] {
+    padding: 0.5rem 0.75rem !important;
+    background: transparent !important;
+}
+
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebar"] [data-testid="stSidebarHeader"] div:has(button) {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* The actual button used to hide/collapse the sidebar */
+[data-testid="stSidebarCollapseButton"] button,
+[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button,
+[data-testid="stSidebar"] [data-testid="stSidebarHeader"] button,
+[data-testid="stSidebar"] button[data-testid*="header"],
+[data-testid="stSidebar"] button[kind*="header"] {
+    background: rgba(255, 255, 255, 0.22) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+    border-radius: 9px !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Hover state: Vibrant J&K EduSetu Saffron with lift & glow */
+[data-testid="stSidebarCollapseButton"] button:hover,
+[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button:hover,
+[data-testid="stSidebar"] [data-testid="stSidebarHeader"] button:hover,
+[data-testid="stSidebar"] button[kind*="header"]:hover {
+    background: linear-gradient(135deg, #E8762C, #D35400) !important;
+    border-color: #F5A623 !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    transform: scale(1.08) !important;
+    box-shadow: 0 0 16px rgba(232, 118, 44, 0.7) !important;
+}
+
+/* Ensure the arrow icon (SVG, span, or Material font) is 100% brilliant white */
+[data-testid="stSidebarCollapseButton"] button *,
+[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button *,
+[data-testid="stSidebar"] [data-testid="stSidebarHeader"] button *,
+[data-testid="stSidebarCollapseButton"] svg,
+[data-testid="stSidebar"] [data-testid="stSidebarHeader"] svg {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    fill: #FFFFFF !important;
+    stroke: #FFFFFF !important;
+    font-size: 22px !important;
+    font-weight: 700 !important;
+}
+
+[data-testid="stSidebarCollapseButton"] button:hover *,
+[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button:hover *,
+[data-testid="stSidebar"] [data-testid="stSidebarHeader"] button:hover * {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    fill: #FFFFFF !important;
+    stroke: #FFFFFF !important;
+}
+
+/* Expand button (when sidebar is hidden / collapsed) */
+[data-testid="stExpandSidebarButton"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"],
+[data-testid="stExpandSidebarButton"] button,
+[data-testid="stSidebarCollapsedControl"] button,
+[data-testid="collapsedControl"] button {
+    background: #0D2137 !important;
+    border: 1.5px solid #E8762C !important;
+    border-radius: 9px !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    box-shadow: 0 2px 10px rgba(13, 33, 55, 0.35) !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 38px !important;
+    height: 38px !important;
+    cursor: pointer !important;
+}
+
+[data-testid="stExpandSidebarButton"]:hover,
+[data-testid="stSidebarCollapsedControl"]:hover,
+[data-testid="collapsedControl"]:hover,
+[data-testid="stExpandSidebarButton"] button:hover {
+    background: linear-gradient(135deg, #E8762C, #D35400) !important;
+    border-color: #F5A623 !important;
+    color: #FFFFFF !important;
+    transform: scale(1.08) !important;
+    box-shadow: 0 0 16px rgba(232, 118, 44, 0.6) !important;
+}
+
+[data-testid="stExpandSidebarButton"] *,
+[data-testid="stSidebarCollapsedControl"] *,
+[data-testid="collapsedControl"] * {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    fill: #FFFFFF !important;
+    stroke: #FFFFFF !important;
+    font-size: 22px !important;
+}
+
+/* Backdrop for Mobile / Tablet Drawer Dismissal */
+#edusetu-sidebar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(13, 33, 55, 0.45);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 999980;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+}
+
+/* Zero-height component iframe styling so it takes zero layout space */
+iframe[title*="streamlit_components_v1_html"] {
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+}
+[data-testid="stCustomComponentV1"]:has(iframe[height="0"]) {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 /* App background subtle mesh gradient */
@@ -677,6 +823,9 @@ ul[role="listbox"] li[aria-selected="true"] {
     box-shadow: 0 2px 8px rgba(27,58,140,0.1);
 }
 [data-testid="stChatInput"] textarea:focus {
+    border-color: #E8762C !important;
+    box-shadow: 0 0 0 4px rgba(232, 118, 44, 0.15) !important;
+}
 
 /* Benchmark comparison table */
 .benchmark-table {
@@ -753,6 +902,149 @@ footer { visibility: hidden; }
 #MainMenu { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
+
+# ==========================================
+# MODERN MOBILE & DRAWER SIDEBAR CONTROLLER
+# Touch-outside-to-hide + Backdrop dismissal
+# ==========================================
+components.html(
+    """
+    <script>
+    (function() {
+        try {
+            const win = window.parent;
+            const doc = win ? win.document : null;
+            if (!doc || !win) return;
+
+            // 1. Create or ensure modern backdrop overlay exists
+            let backdrop = doc.getElementById('edusetu-sidebar-backdrop');
+            if (!backdrop) {
+                backdrop = doc.createElement('div');
+                backdrop.id = 'edusetu-sidebar-backdrop';
+                backdrop.setAttribute('aria-hidden', 'true');
+                doc.body.appendChild(backdrop);
+            }
+
+            // 2. Helper to check if sidebar is currently expanded
+            function isSidebarOpen() {
+                const sidebar = doc.querySelector('[data-testid="stSidebar"]');
+                if (!sidebar) return false;
+                const expanded = sidebar.getAttribute('aria-expanded');
+                if (expanded !== null) return expanded === 'true';
+                const rect = sidebar.getBoundingClientRect();
+                return rect.width > 50 && rect.right > 50;
+            }
+
+            // 3. Helper to close sidebar safely with debounce
+            let lastCloseTime = 0;
+            function closeSidebar() {
+                const now = Date.now();
+                if (now - lastCloseTime < 400) return;
+                lastCloseTime = now;
+
+                const sidebar = doc.querySelector('[data-testid="stSidebar"]');
+                if (!sidebar) return;
+
+                const collapseBtn = sidebar.querySelector('[data-testid="stSidebarCollapseButton"] button') ||
+                                    doc.querySelector('[data-testid="stSidebarCollapseButton"] button') ||
+                                    sidebar.querySelector('[data-testid="stSidebarCollapseButton"]') ||
+                                    doc.querySelector('[data-testid="stSidebarCollapseButton"]') ||
+                                    sidebar.querySelector('[data-testid="stSidebarHeader"] button') ||
+                                    sidebar.querySelector('button[kind*="header"]') ||
+                                    sidebar.querySelector('button');
+                if (collapseBtn) {
+                    collapseBtn.click();
+                    try {
+                        collapseBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: win }));
+                    } catch (e) {}
+                }
+            }
+
+            // 4. Synchronize backdrop visibility with sidebar state
+            function syncBackdrop() {
+                const open = isSidebarOpen();
+                const isMobileOrDrawer = (win.innerWidth <= 1024);
+                if (open && isMobileOrDrawer) {
+                    backdrop.style.opacity = '1';
+                    backdrop.style.pointerEvents = 'auto';
+                } else {
+                    backdrop.style.opacity = '0';
+                    backdrop.style.pointerEvents = 'none';
+                }
+            }
+
+            // 5. Tap or click on backdrop immediately dismisses sidebar
+            backdrop.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeSidebar();
+            };
+            backdrop.ontouchstart = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeSidebar();
+            };
+
+            // 6. Global touch and click listener outside sidebar
+            if (!win.__edusetu_touch_bound) {
+                win.__edusetu_touch_bound = true;
+
+                const handleOutside = function(e) {
+                    const sidebar = doc.querySelector('[data-testid="stSidebar"]');
+                    if (!sidebar || !isSidebarOpen()) return;
+
+                    const target = e.target;
+                    if (!target) return;
+
+                    // If interacting inside sidebar, ignore
+                    if (sidebar.contains(target)) return;
+
+                    // If clicking expand button or collapse controls, let them toggle naturally
+                    if (target.closest('[data-testid="stExpandSidebarButton"]') || 
+                        target.closest('[data-testid="stSidebarCollapsedControl"]') ||
+                        target.closest('[data-testid="collapsedControl"]') ||
+                        target.closest('[data-testid="stSidebarCollapseButton"]')) {
+                        return;
+                    }
+
+                    // On mobile/tablets (<1024px) or on any touch gesture outside: dismiss sidebar
+                    const isMobileOrDrawer = (win.innerWidth <= 1024);
+                    if (isMobileOrDrawer || e.type === 'touchstart') {
+                        closeSidebar();
+                    }
+                };
+
+                doc.addEventListener('click', handleOutside, true);
+                doc.addEventListener('touchstart', handleOutside, { passive: true, capture: true });
+            }
+
+            // 7. Observer to sync backdrop when sidebar toggles
+            if (!win.__edusetu_observer) {
+                win.__edusetu_observer = new MutationObserver(function() {
+                    syncBackdrop();
+                });
+                const sidebar = doc.querySelector('[data-testid="stSidebar"]');
+                if (sidebar) {
+                    win.__edusetu_observer.observe(sidebar, { attributes: true, attributeFilter: ['aria-expanded', 'class', 'style'] });
+                } else {
+                    win.__edusetu_observer.observe(doc.body, { childList: true, subtree: true });
+                }
+                win.addEventListener('resize', syncBackdrop);
+            }
+
+            // Initial sync
+            syncBackdrop();
+            setTimeout(syncBackdrop, 200);
+            setTimeout(syncBackdrop, 600);
+
+        } catch (err) {
+            console.warn('EduSetu sidebar dismiss init:', err);
+        }
+    })();
+    </script>
+    """,
+    height=0,
+)
 
 
 @st.cache_resource(show_spinner="Initializing RAG Engine & Vector DB...")
