@@ -52,6 +52,19 @@ def get_logo_base64():
                 pass
     return ""
 
+
+@st.cache_data
+def get_emblem_base64():
+    """Cache base64 representation of the J&K Government emblem for 100% reliable HTML embedding."""
+    for path in ["assets/jk_emblem.png", "static/jk_emblem.png"]:
+        if os.path.exists(path):
+            try:
+                with open(path, "rb") as f:
+                    return base64.b64encode(f.read()).decode()
+            except Exception:
+                pass
+    return ""
+
 # ==========================================
 # MULTILINGUAL LOCALIZATION (English / हिंदी / اردو / کٲشُر)
 # J&K Official Languages Act, 2020 Compliant
@@ -1783,6 +1796,9 @@ lang_meta = TRANSLATIONS.get(active_lang, TRANSLATIONS["English"])
 logo_b64 = get_logo_base64()
 logo_src = f"data:image/png;base64,{logo_b64}" if logo_b64 else "assets/logo.png"
 
+emblem_b64 = get_emblem_base64()
+emblem_src = f"data:image/png;base64,{emblem_b64}" if emblem_b64 else "assets/jk_emblem.png"
+
 st.markdown(f"""
 <div class="edusetu-hero-card" style="background: linear-gradient(135deg, #0D2137 0%, #17375E 55%, #145A32 100%);
      border-radius: 16px; padding: 20px 24px; margin-bottom: 18px;
@@ -1791,7 +1807,8 @@ st.markdown(f"""
   <!-- Integrated Top Official Utility Strip -->
   <div class="edusetu-hero-strip" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding-bottom:12px; margin-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.15);">
     <div style="display:flex; align-items:center; gap:8px;">
-      <span style="font-size:16px;">🏛️</span>
+      <img src="{emblem_src}" alt="Government of Jammu & Kashmir Emblem"
+           style="height:26px; width:auto; vertical-align:middle; background:#FFFFFF; border-radius:4px; padding:2px; box-shadow:0 2px 6px rgba(0,0,0,0.25);">
       <span style="color:#F0F4F8; font-size:11.5px; font-weight:800; letter-spacing:0.5px;">
         GOVERNMENT OF JAMMU & KASHMIR · HIGHER EDUCATION DEPARTMENT
       </span>
@@ -2817,7 +2834,7 @@ with tabs[6]:
 
     # 5. TEAM & PROJECT CREDENTIALS CARD
     st.markdown("#### 🏆 Engineering Team & Project Credentials")
-    st.markdown("""
+    st.markdown(f"""
     <div class="arch-card" style="border-left:4px solid #1B3A8C;background:#F8FAFC;">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
         <div>
@@ -2830,7 +2847,8 @@ with tabs[6]:
           </div>
         </div>
         <div style="text-align:right;">
-          <span style="background:#1B3A8C;color:white;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;">
+          <span style="background:#1B3A8C;color:white;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:6px;">
+            <img src="{emblem_src}" style="height:18px;width:auto;background:#FFFFFF;border-radius:2px;padding:1px;">
             GOVERNMENT OF JAMMU & KASHMIR
           </span>
           <div style="font-size:10px;color:#64748B;margin-top:4px;">Theme: Smart Education</div>
