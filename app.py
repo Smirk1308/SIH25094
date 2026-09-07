@@ -876,25 +876,196 @@ iframe[title*="streamlit_components_v1_html"] {
     box-shadow: 0 4px 16px rgba(27, 58, 140, 0.08);
 }
 
-/* Mobile Responsiveness */
+/* ========================================================= */
+/* COMPREHENSIVE MOBILE & TOUCH UX OPTIMIZATION (<768px)     */
+/* Designed for SIH Judges on Smartphones & Tablets           */
+/* ========================================================= */
 @media (max-width: 768px) {
+    /* 1. Viewport & Container Spacing */
     .main .block-container {
-        padding: 0.8rem 0.5rem !important;
-        max-width: 100% !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+        padding-top: 0.5rem !important;
+        padding-bottom: 2rem !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
     }
-    .stTabs [data-baseweb="tab-list"] {
-        overflow-x: auto;
-        flex-wrap: nowrap;
-        padding: 4px;
-        gap: 4px;
+
+    /* 2. Top Header & Toolbar clean blending */
+    [data-testid="stHeader"] {
+        background: transparent !important;
+        padding-top: 0 !important;
     }
-    .stTabs [data-baseweb="tab"] {
-        font-size: 11.5px;
-        padding: 0 10px;
-        height: 36px;
+
+    /* 3. Hero Card Mobile Optimization */
+    .edusetu-hero-card {
+        padding: 14px 14px !important;
+        border-radius: 12px !important;
+        margin-bottom: 12px !important;
+    }
+    .edusetu-hero-strip {
+        font-size: 10px !important;
+        padding-bottom: 8px !important;
+        margin-bottom: 10px !important;
+        gap: 6px !important;
+    }
+    .edusetu-hero-logo {
+        width: 56px !important;
+        border-radius: 10px !important;
+        padding: 3px !important;
+    }
+    .edusetu-hero-title {
+        font-size: 22px !important;
+        line-height: 1.15 !important;
+    }
+    .edusetu-hero-tagline {
+        font-size: 12.5px !important;
+    }
+    .edusetu-hero-badges span {
+        font-size: 9.5px !important;
+        padding: 2px 8px !important;
+        border-radius: 10px !important;
+    }
+
+    /* 4. Telemetry Cards: Slick 2x2 Grid instead of 4 giant stacked boxes */
+    [data-testid="stHorizontalBlock"]:has(> [data-testid="column"]:nth-child(4)) {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+    }
+    [data-testid="stHorizontalBlock"]:has(> [data-testid="column"]:nth-child(4)) > [data-testid="column"] {
+        width: 100% !important;
+        min-width: 0 !important;
+        flex: unset !important;
     }
     .modern-card {
-        padding: 12px !important;
+        padding: 10px 10px !important;
+        border-radius: 10px !important;
+    }
+    .modern-card div[style*="font-size:24px"] {
+        font-size: 17px !important;
+    }
+    .modern-card div[style*="font-size:12px"] {
+        font-size: 11px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    .modern-card div[style*="font-size:11px"] {
+        font-size: 9.5px !important;
+        line-height: 1.25 !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* 5. Policy Badges Wrap */
+    .policy-badge-row {
+        gap: 4px !important;
+        margin: 8px 0 12px !important;
+    }
+    .policy-pill {
+        font-size: 10px !important;
+        padding: 3px 8px !important;
+        border-radius: 12px !important;
+    }
+
+    /* 6. Tabs Navigation: Native App Touch Slider */
+    .stTabs [data-baseweb="tab-list"] {
+        overflow-x: auto !important;
+        flex-wrap: nowrap !important;
+        padding: 4px 6px !important;
+        gap: 6px !important;
+        border-radius: 12px !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+    }
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {
+        display: none !important;
+    }
+    .stTabs [data-baseweb="tab"] {
+        font-size: 12px !important;
+        padding: 0 12px !important;
+        height: 38px !important;
+        flex-shrink: 0 !important;
+        border-radius: 8px !important;
+    }
+
+    /* 7. Jury Demo & Form 3-Column Stacking */
+    [data-testid="stHorizontalBlock"]:has(> [data-testid="column"]:nth-child(3)) {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+    [data-testid="stHorizontalBlock"]:has(> [data-testid="column"]:nth-child(3)) > [data-testid="column"] {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    /* 8. Touch-Optimized Buttons & Target Heights */
+    button, 
+    [data-testid="baseButton-secondary"], 
+    [data-testid="baseButton-primary"], 
+    .stButton button {
+        min-height: 44px !important;
+        font-size: 13px !important;
+        border-radius: 10px !important;
+        -webkit-tap-highlight-color: transparent !important;
+    }
+    .stButton button:active {
+        transform: scale(0.98) !important;
+    }
+
+    /* 9. iOS Safari Auto-Zoom Prevention on Inputs */
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    textarea,
+    select,
+    [data-testid="stChatInput"] textarea {
+        font-size: 16px !important;
+        min-height: 44px !important;
+    }
+
+    /* 10. Chat Messages & Chat Bubble Ergonomics */
+    [data-testid="stChatMessage"] {
+        margin-bottom: 8px !important;
+    }
+    [data-testid="stChatMessageContent"] {
+        padding: 10px 14px !important;
+        font-size: 13.5px !important;
+        line-height: 1.45 !important;
+    }
+    [data-testid="stChatInput"] {
+        padding-bottom: env(safe-area-inset-bottom, 8px) !important;
+    }
+
+    /* 11. Tables & Seat Matrices: Smooth In-Card Swipe */
+    .benchmark-table,
+    table {
+        display: block !important;
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    .benchmark-table th,
+    .benchmark-table td {
+        font-size: 11px !important;
+        padding: 8px 10px !important;
+        white-space: normal !important;
+        min-width: 125px !important;
+    }
+
+    /* 12. College Card & Seat Bar Mobile Scaling */
+    .seat-bar-track {
+        height: 10px !important;
+    }
+
+    /* 13. Sidebar Width Optimization on Mobile */
+    [data-testid="stSidebar"] {
+        width: min(330px, 85vw) !important;
+        max-width: 85vw !important;
     }
 }
 
@@ -1218,12 +1389,12 @@ logo_b64 = get_logo_base64()
 logo_src = f"data:image/png;base64,{logo_b64}" if logo_b64 else "assets/logo.png"
 
 st.markdown(f"""
-<div style="background: linear-gradient(135deg, #0D2137 0%, #17375E 55%, #145A32 100%);
+<div class="edusetu-hero-card" style="background: linear-gradient(135deg, #0D2137 0%, #17375E 55%, #145A32 100%);
      border-radius: 16px; padding: 20px 24px; margin-bottom: 18px;
      border-bottom: 4px solid #F5A623; box-shadow: 0 8px 24px rgba(13,33,55,0.22);">
   
   <!-- Integrated Top Official Utility Strip -->
-  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding-bottom:12px; margin-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.15);">
+  <div class="edusetu-hero-strip" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding-bottom:12px; margin-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.15);">
     <div style="display:flex; align-items:center; gap:8px;">
       <span style="font-size:16px;">🏛️</span>
       <span style="color:#F0F4F8; font-size:11.5px; font-weight:800; letter-spacing:0.5px;">
@@ -1244,23 +1415,23 @@ st.markdown(f"""
   </div>
 
   <!-- Main Hero Brand Row -->
-  <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
-    <img src="{logo_src}" width="82"
+  <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+    <img class="edusetu-hero-logo" src="{logo_src}" width="82"
          style="border-radius:14px; flex-shrink:0; background:white; padding:5px; box-shadow:0 4px 14px rgba(0,0,0,0.2);">
-    <div style="flex:1; min-width:280px;">
+    <div class="edusetu-hero-body" style="flex:1; min-width:180px;">
       <div style="color:#AEC6D0; font-size:11px; font-weight:700; letter-spacing:0.8px; margin-bottom:2px;">
         TEAM ERROR404 · NIE MYSURU (CSE · BATCH 2027)
       </div>
-      <div style="color:white; font-size:28px; font-weight:800; line-height:1.2; letter-spacing:0.3px;">
+      <div class="edusetu-hero-title" style="color:white; font-size:28px; font-weight:800; line-height:1.2; letter-spacing:0.3px;">
         J&K EduSetu
       </div>
-      <div style="color:#F5A623; font-size:14px; font-weight:700; margin-top:2px;">
+      <div class="edusetu-hero-tagline" style="color:#F5A623; font-size:14px; font-weight:700; margin-top:2px;">
         {lang_meta['tagline']}
       </div>
       <div style="color:#E2E8F0; font-size:12px; margin-top:5px; line-height:1.4;">
         AI-Powered Autonomous Education, Career & Policy Gateway for Jammu & Kashmir · Grounded in Official UT Gazettes & 2G Edge Deployable
       </div>
-      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:12px;">
+      <div class="edusetu-hero-badges" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:12px;">
         <span style="background:rgba(255,255,255,0.12); color:#FFFFFF; font-size:10.5px; font-weight:600; padding:3px 10px; border-radius:12px;">📜 AICTE PMSSS Aligned</span>
         <span style="background:rgba(255,255,255,0.12); color:#FFFFFF; font-size:10.5px; font-weight:600; padding:3px 10px; border-radius:12px;">⚖️ S.O. 176 (2024) Quota Engine</span>
         <span style="background:rgba(46,204,113,0.22); color:#4ADE80; font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:12px;">⚡ 0.27ms Offline Trie</span>
@@ -1331,12 +1502,12 @@ with stat_col4:
 
 # 4. VERIFIED POLICY BADGES ROW
 st.markdown(f"""
-<div style="display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 18px;">
-  <span style="background:#EAF7EF;color:#1E8449;padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:700;border:1px solid #A9DFBF;">✓ Sub-1ms Inverted Index</span>
-  <span style="background:#E8F4F8;color:#1B3A4B;padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:700;border:1px solid #C5DCE8;">✓ Verified Gazette Chunks</span>
-  <span style="background:#FEF3E8;color:#C4621F;padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:700;border:1px solid #F5C99A;">✓ Zero Cloud Cost Mode</span>
-  <span style="background:#F4ECFB;color:#6C3483;padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:700;border:1px solid #D7BDE2;">{lang_meta['lang_badge']}</span>
-  <span style="background:#FDEDEC;color:#922B21;padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:700;border:1px solid #F1948A;">✓ In-State DPDP Compliance</span>
+<div class="policy-badge-row" style="display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 18px;">
+  <span class="policy-pill" style="background:#EAF7EF;color:#1E8449;padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:700;border:1px solid #A9DFBF;">✓ Sub-1ms Inverted Index</span>
+  <span class="policy-pill" style="background:#E8F4F8;color:#1B3A8C;padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:700;border:1px solid #C5DCE8;">✓ Verified Gazette Chunks</span>
+  <span class="policy-pill" style="background:#FEF3E8;color:#C4621F;padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:700;border:1px solid #F5C99A;">✓ Zero Cloud Cost Mode</span>
+  <span class="policy-pill" style="background:#F4ECFB;color:#6C3483;padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:700;border:1px solid #D7BDE2;">{lang_meta['lang_badge']}</span>
+  <span class="policy-pill" style="background:#FDEDEC;color:#922B21;padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:700;border:1px solid #F1948A;">✓ In-State DPDP Compliance</span>
 </div>
 """, unsafe_allow_html=True)
 
