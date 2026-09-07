@@ -156,18 +156,208 @@ html, body, [class*="css"] {
     font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Gradient sidebar with glassmorphic depth */
+/* Gradient sidebar with glassmorphic depth — J&K EduSetu brand gradient */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #091927 0%, #132D3F 50%, #1A3E54 100%);
-    border-right: 1px solid rgba(232, 118, 44, 0.25);
+    background: linear-gradient(180deg, #0D2137 0%, #1B3A8C 55%, #1A6B3C 100%);
+    border-right: 1px solid rgba(26, 107, 60, 0.3);
     padding-top: 1rem;
 }
-[data-testid="stSidebar"] * { color: #F0F4F8 !important; }
+
+/* Sidebar headers, labels, and canvas text (crisp white on dark gradient) */
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] h4 {
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+}
+
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+[data-testid="stSidebar"] [data-testid="stRadio"] label,
+[data-testid="stSidebar"] [data-testid="stRadio"] label p,
+[data-testid="stSidebar"] [data-testid="stRadio"] label span {
+    color: #F0F4F8 !important;
+    font-weight: 500 !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {
+    color: #CBD5E1 !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] strong {
+    color: #FFFFFF !important;
+}
+
+[data-testid="stSidebar"] hr {
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* --- FIX: High Contrast Inputs (Admin Password & Text Inputs) --- */
+[data-testid="stSidebar"] input[type="text"],
+[data-testid="stSidebar"] input[type="password"],
+[data-testid="stSidebar"] input {
+    background-color: #FFFFFF !important;
+    color: #0D2137 !important;
+    -webkit-text-fill-color: #0D2137 !important;
+    border: 1.5px solid #CBD5E1 !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    padding: 8px 12px !important;
+}
+
+[data-testid="stSidebar"] input:focus {
+    border-color: #E8762C !important;
+    box-shadow: 0 0 0 2px rgba(232, 118, 44, 0.25) !important;
+    outline: none !important;
+}
+
+[data-testid="stSidebar"] input::placeholder {
+    color: #64748B !important;
+    -webkit-text-fill-color: #64748B !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stTextInput"] button svg {
+    fill: #64748B !important;
+}
+
+/* --- FIX: High Contrast Selectbox (Language Selector) --- */
+[data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] {
+    background-color: #FFFFFF !important;
+    border: 1.5px solid #CBD5E1 !important;
+    border-radius: 8px !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] > div {
+    background-color: #FFFFFF !important;
+    color: #0D2137 !important;
+    -webkit-text-fill-color: #0D2137 !important;
+    border-radius: 8px !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] * {
+    color: #0D2137 !important;
+    -webkit-text-fill-color: #0D2137 !important;
+    font-weight: 600 !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] svg {
+    fill: #0D2137 !important;
+}
+
+/* Global BaseWeb popovers (dropdown options for selectbox) */
+[data-baseweb="popover"],
+[data-baseweb="popover"] > div,
+[data-baseweb="menu"],
+ul[role="listbox"] {
+    background-color: #FFFFFF !important;
+    border-radius: 8px !important;
+}
+
+[data-baseweb="popover"] li,
+[data-baseweb="popover"] li *,
+[data-baseweb="menu"] li,
+[data-baseweb="menu"] li *,
+ul[role="listbox"] li,
+ul[role="listbox"] li * {
+    color: #0D2137 !important;
+    -webkit-text-fill-color: #0D2137 !important;
+    font-weight: 500 !important;
+}
+
+[data-baseweb="popover"] li:hover,
+[data-baseweb="menu"] li:hover,
+ul[role="listbox"] li[aria-selected="true"] {
+    background-color: #EEF2F7 !important;
+    color: #1B3A8C !important;
+    -webkit-text-fill-color: #1B3A8C !important;
+}
+
+/* --- FIX: High Contrast Sidebar Expanders (Model Usage Today, About Project, Settings) --- */
+[data-testid="stSidebar"] [data-testid="stExpander"] {
+    background: #FFFFFF !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12) !important;
+    margin-bottom: 10px !important;
+    overflow: hidden !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stExpander"] details {
+    background: #FFFFFF !important;
+    border-radius: 10px !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stExpander"] summary {
+    background: #FFFFFF !important;
+    color: #0D2137 !important;
+    font-weight: 700 !important;
+    border-radius: 10px !important;
+    padding: 10px 14px !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stExpander"] summary * {
+    color: #0D2137 !important;
+    -webkit-text-fill-color: #0D2137 !important;
+    font-weight: 700 !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stExpander"] summary svg {
+    fill: #0D2137 !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
+    background: #FFFFFF !important;
+    padding: 10px 14px !important;
+    border-top: 1px solid #EEF2F7 !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"] * {
+    color: #1E293B !important;
+    -webkit-text-fill-color: #1E293B !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"] p {
+    color: #1E293B !important;
+    -webkit-text-fill-color: #1E293B !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"] strong {
+    color: #0D2137 !important;
+    -webkit-text-fill-color: #0D2137 !important;
+    font-weight: 700 !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stExpander"] code {
+    background: #E2E8F0 !important;
+    color: #1B3A8C !important;
+    -webkit-text-fill-color: #1B3A8C !important;
+    font-weight: 600 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    border: 1px solid #CBD5E1 !important;
+    font-size: 11px !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stSlider"] * {
+    color: #0D2137 !important;
+    -webkit-text-fill-color: #0D2137 !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stCheckbox"] * {
+    color: #0D2137 !important;
+    -webkit-text-fill-color: #0D2137 !important;
+}
 
 /* Sidebar action buttons */
 [data-testid="stSidebar"] .stButton button {
     background: linear-gradient(135deg, #E8762C, #D35400);
     color: white !important;
+    -webkit-text-fill-color: white !important;
     border: none;
     border-radius: 10px;
     font-weight: 600;
@@ -176,13 +366,16 @@ html, body, [class*="css"] {
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 4px 12px rgba(232, 118, 44, 0.25);
 }
+
 [data-testid="stSidebar"] .stButton button:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 18px rgba(232, 118, 44, 0.45);
+    background: linear-gradient(135deg, #F5A623, #E8762C);
 }
 
 [data-testid="collapsedControl"] {
-    display: block; color: white;
+    display: block;
+    color: white;
 }
 
 /* App background subtle mesh gradient */
@@ -362,18 +555,6 @@ html, body, [class*="css"] {
     transform: translateY(-1px);
     box-shadow: 0 4px 14px rgba(232, 118, 44, 0.35);
 }
-
-/* Sidebar gradient — logo colors */
-[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0D2137 0%, #1B3A8C 55%, #1A6B3C 100%);
-    border-right: 1px solid rgba(26,107,60,0.3);
-}
-[data-testid="stSidebar"] * { color: white !important; }
-[data-testid="stSidebar"] .stButton button {
-    background: #1A6B3C; color: white;
-    border: none; border-radius: 8px; width: 100%;
-}
-[data-testid="collapsedControl"] { display: block; color: white; }
 
 /* App background */
 .stApp {
