@@ -58,7 +58,8 @@ class ErrorDiagnostic:
                     "Don't worry — your app continues to function seamlessly using local 2G government records."
                 ),
                 "action_steps": [
-                    "**On Streamlit Cloud**: Click **Manage app (⋮)** in the bottom right ➔ **Settings (⚙️)** ➔ **Secrets** ➔ Enter: `GOOGLE_API_KEY = \"AIza...\"` and `GROQ_API_KEY = \"gsk_...\"`",
+                    "**⚡ Instant Live Bypass**: Expand **☁️ Cloud API Status & Key Settings** in the left sidebar and paste your Gemini key directly into the input box — it activates immediately without needing secrets.toml or reboot!",
+                    "**On Streamlit Cloud Secrets**: Click **Manage app (⋮)** in the bottom right ➔ **Settings (⚙️)** ➔ **Secrets**. Ensure values have double quotes: `GOOGLE_API_KEY = \"your_key_here\"` (without quotes, a TOML parse error occurs).",
                     "**When Running Locally**: Create `.streamlit/secrets.toml` or `.env` and add your keys.",
                     "**Get Free Keys**: Generate keys at [aistudio.google.com](https://aistudio.google.com/) or [console.groq.com/keys](https://console.groq.com/keys)."
                 ],

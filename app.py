@@ -334,37 +334,120 @@ def t(key: str, default: str = "") -> str:
     return lang_dict.get(key, TRANSLATIONS["English"].get(key, default or key))
 
 
-# Retrieve GROQ_API_KEY securely from st.secrets or environment
-def get_groq_api_key() -> str:
+# Diagnostic inspector for Streamlit Secrets health
+def get_secrets_status() -> Dict[str, Any]:
+    """Inspect st.secrets state for diagnostics without exposing secret values."""
+    res = {"accessible": False, "keys_found": [], "error": None}
     try:
-        if "GROQ_API_KEY" in st.secrets:
-            return str(st.secrets["GROQ_API_KEY"]).strip()
-        if "groq_api_key" in st.secrets:
-            return str(st.secrets["groq_api_key"]).strip()
-        for val in st.secrets.values():
-            if isinstance(val, dict):
-                if "GROQ_API_KEY" in val:
-                    return str(val["GROQ_API_KEY"]).strip()
-                if "groq_api_key" in val:
-                    return str(val["groq_api_key"]).strip()
-    except Exception:
-        pass
-    return os.getenv("GROQ_API_KEY", os.getenv("groq_api_key", "")).strip()
+        if hasattr(st, "secrets"):
+            try:
+                keys = list(st.secrets.keys())
+                res["accessible"] = True
+                res["keys_found"] = keys
+            except Exception as e:
+                res["error"] = f"{type(e).__name__}: {str(e)}"
+    except Exception as e:
+        res["error"] = f"{type(e).__name__}: {str(e)}"
+    return res
 
-# Retrieve GOOGLE_API_KEY securely from st.secrets or environment
-def get_google_api_key() -> str:
+
+# Retrieve GROQ_API_KEY securely from session state, st.secrets, or environment
+def get_groq_api_key() -> str:
+    # 1. Check direct session override (from sidebar text input)
+    if hasattr(st, "session_state") and st.session_state.get("custom_groq_key"):
+        custom = str(st.session_state["custom_groq_key"]).strip().strip("'").strip('"').strip()
+        if custom:
+            return custom
+
+    # 2. Check Streamlit Secrets across all naming variants and nested tables
     try:
-        for k in ["GOOGLE_API_KEY", "google_api_key", "GEMINI_API_KEY", "gemini_api_key"]:
-            if k in st.secrets:
-                return str(st.secrets[k]).strip()
-        for val in st.secrets.values():
-            if isinstance(val, dict):
-                for k in ["GOOGLE_API_KEY", "google_api_key", "GEMINI_API_KEY", "gemini_api_key"]:
-                    if k in val:
-                        return str(val[k]).strip()
+        if hasattr(st, "secrets"):
+            for k in ["GROQ_API_KEY", "groq_api_key", "GROQ_KEY", "groq_key"]:
+                if k in st.secrets:
+                    val = str(st.secrets[k]).strip().strip("'").strip('"').strip()
+                    if val:
+                        return val
+
+            for k, v in st.secrets.items():
+                if isinstance(v, str) and "groq" in k.lower():
+                    val = str(v).strip().strip("'").strip('"').strip()
+                    if val:
+                        return val
+
+            for val in st.secrets.values():
+                if isinstance(val, dict):
+                    for k in ["GROQ_API_KEY", "groq_api_key", "GROQ_KEY", "groq_key"]:
+                        if k in val:
+                            res = str(val[k]).strip().strip("'").strip('"').strip()
+                            if res:
+                                return res
+                    for k, v in val.items():
+                        if isinstance(v, str) and "groq" in k.lower():
+                            res = str(v).strip().strip("'").strip('"').strip()
+                            if res:
+                                return res
     except Exception:
         pass
-    return os.getenv("GOOGLE_API_KEY", os.getenv("GEMINI_API_KEY", os.getenv("google_api_key", ""))).strip()
+
+    for env_var in ["GROQ_API_KEY", "groq_api_key"]:
+        val = os.getenv(env_var, "").strip().strip("'").strip('"').strip()
+        if val:
+            return val
+
+    return ""
+
+
+# Retrieve GOOGLE_API_KEY securely from session state, st.secrets, or environment
+def get_google_api_key() -> str:
+    # 1. Check direct session override (from sidebar text input)
+    if hasattr(st, "session_state") and st.session_state.get("custom_gemini_key"):
+        custom = str(st.session_state["custom_gemini_key"]).strip().strip("'").strip('"').strip()
+        if custom:
+            return custom
+
+    # 2. Check Streamlit Secrets across all naming variants and nested tables
+    try:
+        if hasattr(st, "secrets"):
+            for k in [
+                "GOOGLE_API_KEY", "google_api_key", "GEMINI_API_KEY", "gemini_api_key",
+                "GEMINI_KEY", "gemini_key", "GOOGLE_KEY", "google_key", "API_KEY"
+            ]:
+                if k in st.secrets:
+                    val = str(st.secrets[k]).strip().strip("'").strip('"').strip()
+                    if val:
+                        return val
+
+            for k, v in st.secrets.items():
+                if isinstance(v, str) and any(term in k.lower() for term in ["gemini", "google"]):
+                    val = str(v).strip().strip("'").strip('"').strip()
+                    if val:
+                        return val
+
+            for val in st.secrets.values():
+                if isinstance(val, dict):
+                    for k in [
+                        "GOOGLE_API_KEY", "google_api_key", "GEMINI_API_KEY", "gemini_api_key",
+                        "GEMINI_KEY", "gemini_key", "GOOGLE_KEY", "google_key", "API_KEY"
+                    ]:
+                        if k in val:
+                            res = str(val[k]).strip().strip("'").strip('"').strip()
+                            if res:
+                                return res
+                    for k, v in val.items():
+                        if isinstance(v, str) and any(term in k.lower() for term in ["gemini", "google"]):
+                            res = str(v).strip().strip("'").strip('"').strip()
+                            if res:
+                                return res
+    except Exception:
+        pass
+
+    # 3. Check environment variables
+    for env_var in ["GOOGLE_API_KEY", "GEMINI_API_KEY", "google_api_key", "gemini_api_key"]:
+        val = os.getenv(env_var, "").strip().strip("'").strip('"').strip()
+        if val:
+            return val
+
+    return ""
 
 groq_api_key = get_groq_api_key()
 google_api_key = get_google_api_key()
@@ -1717,20 +1800,60 @@ with st.sidebar:
         )
 
     # Cloud AI Health & Key Diagnostics (Provides full visibility into API connectivity)
-    with st.sidebar.expander("☁️ Cloud API Status & Secrets", expanded=False):
-        if google_api_key:
-            st.markdown("🟢 **Google Gemini API**: Connected")
+    with st.sidebar.expander("☁️ Cloud API Status & Key Settings", expanded=False):
+        secrets_diag = get_secrets_status()
+        if secrets_diag["error"]:
+            st.error(f"⚠️ **Secrets Syntax Error**: `{secrets_diag['error']}`")
+            st.caption("TOML parsing failed on Cloud. Enclose keys in double quotes, e.g.: `GOOGLE_API_KEY = \"AIza...\"`")
+        elif secrets_diag["accessible"]:
+            st.caption(f"🔑 Detected Secrets Keys: `{', '.join(secrets_diag['keys_found']) if secrets_diag['keys_found'] else 'None'}`")
+
+        # Gemini live status
+        live_gem_key = get_google_api_key()
+        if live_gem_key:
+            source_tag = "Direct Key" if st.session_state.get("custom_gemini_key") else "Streamlit Secrets"
+            st.markdown(f"🟢 **Google Gemini API**: Connected *({source_tag})*")
             st.caption(f"Active Model: `{st.session_state.get('active_model_id', 'gemini-3.5-flash')}`")
         else:
-            st.markdown("🔴 **Google Gemini API**: Not Found in Secrets")
-            st.caption("Please paste `GOOGLE_API_KEY = '...'` in Streamlit Cloud Settings > Secrets.")
+            st.markdown("🔴 **Google Gemini API**: Not Detected")
+            st.caption("Paste your key below for instant activation without needing secrets.toml!")
 
-        if groq_api_key:
-            st.markdown("🟢 **Groq LLM Backup**: Connected")
+        # Direct input for Gemini API Key (Bypasses secrets.toml entirely)
+        custom_gemini_val = st.text_input(
+            "🔑 Paste Gemini API Key (Direct)",
+            value=st.session_state.get("custom_gemini_key", ""),
+            type="password",
+            placeholder="AIzaSy... or AQ.Ab8...",
+            help="Instant activation: Paste your Gemini key here directly to override/bypass secrets.toml.",
+            key="gemini_key_direct_input"
+        )
+        if custom_gemini_val and custom_gemini_val != st.session_state.get("custom_gemini_key", ""):
+            st.session_state.custom_gemini_key = custom_gemini_val.strip()
+            st.rerun()
+
+        st.markdown("---")
+
+        # Groq live status
+        live_groq_key = get_groq_api_key()
+        if live_groq_key:
+            groq_source = "Direct Key" if st.session_state.get("custom_groq_key") else "Streamlit Secrets"
+            st.markdown(f"🟢 **Groq LLM Backup**: Connected *({groq_source})*")
         else:
             st.markdown("⚪ **Groq LLM Backup**: Not configured")
 
-        if not google_api_key and not groq_api_key:
+        custom_groq_val = st.text_input(
+            "🔑 Paste Groq API Key (Optional Backup)",
+            value=st.session_state.get("custom_groq_key", ""),
+            type="password",
+            placeholder="gsk_...",
+            help="Optional backup key for instant failover if Gemini ever hits rate limits.",
+            key="groq_key_direct_input"
+        )
+        if custom_groq_val and custom_groq_val != st.session_state.get("custom_groq_key", ""):
+            st.session_state.custom_groq_key = custom_groq_val.strip()
+            st.rerun()
+
+        if not live_gem_key and not live_groq_key:
             st.info("⚡ **Running in 2G Edge Mode**: Zero external cloud dependencies. Responses served locally from verified J&K documents.")
 
     st.divider()
@@ -2093,6 +2216,10 @@ with tabs[0]:
         # 2. SMART AUTO-DETECT & AI CLOUD (Adaptive Hybrid Execution)
         else:
             offline_match = get_2g_response(current_prompt)
+
+            # Dynamically resolve live keys from session state, secrets, and environment
+            google_api_key = get_google_api_key()
+            groq_api_key = get_groq_api_key()
 
             if not google_api_key and not groq_api_key:
                 with st.chat_message("assistant"):
