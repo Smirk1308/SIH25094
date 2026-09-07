@@ -677,48 +677,6 @@ ul[role="listbox"] li[aria-selected="true"] {
     box-shadow: 0 2px 8px rgba(27,58,140,0.1);
 }
 [data-testid="stChatInput"] textarea:focus {
-/* National Tricolor Top Ribbon & Government Utility Bar */
-.tricolor-ribbon {
-    height: 3.5px;
-    background: linear-gradient(90deg, #FF9933 0%, #FF9933 33.3%, #FFFFFF 33.3%, #FFFFFF 66.6%, #138808 66.6%, #138808 100%);
-    border-radius: 6px 6px 0 0;
-}
-
-.gov-ribbon-bar {
-    background: #081624;
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-top: none;
-    border-radius: 0 0 12px 12px;
-    padding: 7px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-}
-
-.gov-badge-tag {
-    font-size: 10px;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 6px;
-    letter-spacing: 0.3px;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-
-/* Jury Evaluation Suite Container */
-.jury-suite-container {
-    background: linear-gradient(135deg, #091927 0%, #0F2840 60%, #173B5C 100%);
-    border: 1.5px solid #F5A623;
-    border-radius: 14px;
-    padding: 16px 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 6px 22px rgba(245, 166, 35, 0.14);
-}
 
 /* Benchmark comparison table */
 .benchmark-table {
@@ -963,69 +921,58 @@ with st.sidebar:
 active_lang = st.session_state.get("selected_language", "English")
 lang_meta = TRANSLATIONS.get(active_lang, TRANSLATIONS["English"])
 
-# 1. OFFICIAL TOP GOVERNMENT UTILITY RIBBON
+# 1. UNIFIED INSTITUTIONAL HERO BANNER (GOVT OF J&K · TEAM ERROR404)
 logo_b64 = get_logo_base64()
 logo_src = f"data:image/png;base64,{logo_b64}" if logo_b64 else "assets/logo.png"
 
-st.markdown("""
-<div class="tricolor-ribbon"></div>
-<div class="gov-ribbon-bar">
-  <div style="display:flex;align-items:center;gap:10px;">
-    <span style="font-size:16px;">🏛️</span>
-    <div>
-      <div style="color:#F8FAFC;font-size:11px;font-weight:800;letter-spacing:0.5px;">
+st.markdown(f"""
+<div style="background: linear-gradient(135deg, #0D2137 0%, #17375E 55%, #145A32 100%);
+     border-radius: 16px; padding: 20px 24px; margin-bottom: 18px;
+     border-bottom: 4px solid #F5A623; box-shadow: 0 8px 24px rgba(13,33,55,0.22);">
+  
+  <!-- Integrated Top Official Utility Strip -->
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding-bottom:12px; margin-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.15);">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-size:16px;">🏛️</span>
+      <span style="color:#F0F4F8; font-size:11.5px; font-weight:800; letter-spacing:0.5px;">
         GOVERNMENT OF JAMMU & KASHMIR · HIGHER EDUCATION DEPARTMENT
-      </div>
-      <div style="color:#94A3B8;font-size:9.5px;font-weight:600;">
-        UT Autonomous Career Guidance & Policy Advisory Gateway · NEP 2020 Aligned
-      </div>
+      </span>
+    </div>
+    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+      <span style="background:rgba(245,166,35,0.25); color:#F5A623; font-size:10px; font-weight:800; padding:2px 8px; border-radius:6px; border:1px solid rgba(245,166,35,0.4);">
+        🏆 SIH 2026 FINALIST · PS SIH25094
+      </span>
+      <span style="background:rgba(255,255,255,0.12); color:#E2E8F0; font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px;">
+        NEP 2020 COMPLIANT
+      </span>
+      <span style="background:rgba(46,204,113,0.22); color:#4ADE80; font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px; border:1px solid rgba(74,222,128,0.35);">
+        ● 2G EDGE: 0.27ms
+      </span>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-    <span class="gov-badge-tag" style="background:rgba(232,118,44,0.2);color:#F5A623;border:1px solid rgba(245,166,35,0.35);">
-      🏆 SIH 2026 FINALIST · PS SIH25094
-    </span>
-    <span class="gov-badge-tag" style="background:rgba(27,58,140,0.3);color:#7DD3FC;border:1px solid rgba(125,211,252,0.35);">
-      🛡️ TEAM ERROR404 · NIE MYSURU
-    </span>
-    <span class="gov-badge-tag" style="background:rgba(34,197,94,0.18);color:#4ADE80;border:1px solid rgba(74,222,128,0.35);">
-      <span class="pulse-radar" style="width:7px;height:7px;margin-right:3px;"></span>2G EDGE NODE: 0.27ms
-    </span>
-  </div>
-</div>
-""", unsafe_allow_html=True)
 
-# 2. UPGRADED HERO SECTION (TEAM ERROR404 · NIE MYSURU)
-st.markdown(f"""
-<div style="background:linear-gradient(135deg,#0D2137 0%,#1B3A8C 55%,#1A6B3C 100%);
-     border-radius:16px; padding:22px 26px; margin-bottom:18px;
-     border-bottom:4px solid #F5A623; box-shadow: 0 8px 28px rgba(13,33,55,0.22);">
+  <!-- Main Hero Brand Row -->
   <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
-    <img src="{logo_src}" width="78"
-         style="border-radius:12px; flex-shrink:0; background:white; padding:4px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
-    <div style="flex:1; min-width:260px;">
-      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
-        <span style="background:rgba(245,166,35,0.2); color:#F5A623; font-size:10px; font-weight:800; padding:2px 8px; border-radius:6px; letter-spacing:1px;">
-          SIH 2026 · SIH25094 · SMART EDUCATION
-        </span>
-        <span style="color:#AEC6D0; font-size:10.5px; font-weight:700;">
-          Team Error404 · NIE Mysuru (CSE · Batch 2027)
-        </span>
+    <img src="{logo_src}" width="82"
+         style="border-radius:14px; flex-shrink:0; background:white; padding:5px; box-shadow:0 4px 14px rgba(0,0,0,0.2);">
+    <div style="flex:1; min-width:280px;">
+      <div style="color:#AEC6D0; font-size:11px; font-weight:700; letter-spacing:0.8px; margin-bottom:2px;">
+        TEAM ERROR404 · NIE MYSURU (CSE · BATCH 2027)
       </div>
-      <div style="color:white; font-size:26px; font-weight:800; line-height:1.2; letter-spacing:0.3px;">
+      <div style="color:white; font-size:28px; font-weight:800; line-height:1.2; letter-spacing:0.3px;">
         J&K EduSetu
       </div>
-      <div style="color:#F5A623; font-size:13.5px; font-weight:700; margin-top:2px;">
+      <div style="color:#F5A623; font-size:14px; font-weight:700; margin-top:2px;">
         {lang_meta['tagline']}
       </div>
-      <div style="color:#E2E8F0; font-size:12px; margin-top:4px; line-height:1.4;">
+      <div style="color:#E2E8F0; font-size:12px; margin-top:5px; line-height:1.4;">
         AI-Powered Autonomous Education, Career & Policy Gateway for Jammu & Kashmir · Grounded in Official UT Gazettes & 2G Edge Deployable
       </div>
-      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
-        <span style="background:rgba(255,255,255,0.12); color:#FFFFFF; font-size:10px; font-weight:700; padding:3px 8px; border-radius:12px;">🏛️ J&K Higher Education Dept</span>
-        <span style="background:rgba(255,255,255,0.12); color:#FFFFFF; font-size:10px; font-weight:700; padding:3px 8px; border-radius:12px;">📜 AICTE PMSSS 2024-25</span>
-        <span style="background:rgba(255,255,255,0.12); color:#FFFFFF; font-size:10px; font-weight:700; padding:3px 8px; border-radius:12px;">⚖️ S.O. 176 (2024) Quota Rules</span>
-        <span style="background:rgba(46,204,113,0.22); color:#4ADE80; font-size:10px; font-weight:700; padding:3px 8px; border-radius:12px;">⚡ 0.27ms Edge Trie</span>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:12px;">
+        <span style="background:rgba(255,255,255,0.12); color:#FFFFFF; font-size:10.5px; font-weight:600; padding:3px 10px; border-radius:12px;">📜 AICTE PMSSS Aligned</span>
+        <span style="background:rgba(255,255,255,0.12); color:#FFFFFF; font-size:10.5px; font-weight:600; padding:3px 10px; border-radius:12px;">⚖️ S.O. 176 (2024) Quota Engine</span>
+        <span style="background:rgba(46,204,113,0.22); color:#4ADE80; font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:12px;">⚡ 0.27ms Offline Trie</span>
+        <span style="background:rgba(255,255,255,0.12); color:#FFFFFF; font-size:10.5px; font-weight:600; padding:3px 10px; border-radius:12px;">🔒 In-State Data Residency</span>
       </div>
     </div>
   </div>
@@ -1127,43 +1074,46 @@ tabs = st.tabs(tab_titles)
 with tabs[0]:
     # 🎯 JURY LIVE EVALUATION DEMO SUITE (1-Click Hard Engineering Verification)
     st.markdown("""
-    <div class="jury-suite-container">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <div style="color:#F5A623;font-size:12.5px;font-weight:800;letter-spacing:0.8px;">
-          ⚡ JURY LIVE DEMO SUITE — 1-Click Engineering Verification
+    <div style="background: linear-gradient(135deg, #0D2137 0%, #17324B 100%); border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; border-left: 5px solid #F5A623; box-shadow: 0 4px 16px rgba(13,33,55,0.12);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:4px;">
+        <div style="color:#F5A623; font-size:12.5px; font-weight:800; letter-spacing:0.8px;">
+          ⚡ JURY LIVE DEMO SUITE — 1-Click Verification Scenarios
         </div>
-        <span style="background:#F5A623;color:#091927;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:4px;letter-spacing:0.5px;">
+        <span style="background:rgba(245,166,35,0.2); color:#F5A623; font-size:10px; font-weight:800; padding:2px 8px; border-radius:10px; border:1px solid rgba(245,166,35,0.4);">
           SIH EVALUATION READY
         </span>
       </div>
-      <div style="color:#CBD5E1;font-size:11.5px;line-height:1.4;">
-        Test core architectural capabilities in 1 click without manual typing:
+      <div style="color:#CBD5E1; font-size:11.5px; line-height:1.4;">
+        Click any scenario below to immediately benchmark the underlying engine without manual typing:
       </div>
     </div>
     """, unsafe_allow_html=True)
 
     jd_c1, jd_c2, jd_c3 = st.columns(3)
     with jd_c1:
-        if st.button("⚡ Test 1: 0ms 2G Edge Lookup\n(Simulate Kupwara/Poonch Outage)", use_container_width=True, key="jury_demo_2g"):
+        if st.button("⚡ 1. 2G Edge Engine (0.27ms)", use_container_width=True, key="jury_demo_2g"):
             st.session_state.messages.append({
                 "role": "user",
                 "content": "PMSSS Scholarship eligibility criteria, annual family income limit, and financial assistance"
             })
             st.rerun()
+        st.caption("Simulate Kupwara/Poonch offline outage")
     with jd_c2:
-        if st.button("⚖️ Test 2: 2024 Reservation Matrix\n(GCET Jammu & S.O. 176 Rules)", use_container_width=True, key="jury_demo_quota"):
+        if st.button("⚖️ 2. S.O. 176 Quota Matrix", use_container_width=True, key="jury_demo_quota"):
             st.session_state.messages.append({
                 "role": "user",
                 "content": "What are the exact reservation categories, OM, RBA, SC, ST, and Border area quotas for engineering admissions under J&K S.O. 176 of 2024?"
             })
             st.rerun()
+        st.caption("Compute 2024 GCET & NIT reservation")
     with jd_c3:
-        if st.button("📄 Test 3: Multi-Hop Gazette RAG\n(Post-Matric Scheme with Citations)", use_container_width=True, key="jury_demo_rag"):
+        if st.button("📚 3. Gazette RAG Citations", use_container_width=True, key="jury_demo_rag"):
             st.session_state.messages.append({
                 "role": "user",
                 "content": "Post-Matric Scholarship for J&K: Complete tuition fee reimbursement, maintenance allowance, and application procedure"
             })
             st.rerun()
+        st.caption("Multi-hop RAG with PDF clause citations")
 
     st.markdown("<div style='margin-bottom:12px;'></div>", unsafe_allow_html=True)
 
