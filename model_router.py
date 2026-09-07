@@ -142,24 +142,36 @@ def get_llm(query: str = "", history_length: int = 0):
         st.session_state.model_usage[tier] = \
             st.session_state.model_usage.get(tier, 0) + 1
 
-    google_api_key = None
-    try:
-        if hasattr(st, "secrets") and "GOOGLE_API_KEY" in st.secrets:
-            google_api_key = str(st.secrets["GOOGLE_API_KEY"]).strip()
-    except Exception:
-        pass
-    if not google_api_key:
-        google_api_key = os.getenv("GOOGLE_API_KEY", "").strip()
+    import api_key_helper
 
-    # Build LLM
-    llm_kwargs = dict(
+    google_api_key = api_key_helper.get_google_api_key()
+    groq_api_key = api_key_helper.get_groq_api_key()
+
+    if google_api_key:
+        llm_kwargs = dict(
+            model=model_cfg["id"],
+            google_api_key=google_api_key,
+            max_output_tokens=model_cfg["max_tokens"],
+            temperature=0.2,
+        )
+        return ChatGoogleGenerativeAI(**llm_kwargs)
+
+    if groq_api_key:
+        from langchain_groq import ChatGroq
+        return ChatGroq(
+            model_name="qwen/qwen3.8-27b",
+            groq_api_key=groq_api_key,
+            temperature=0.2,
+            max_tokens=model_cfg["max_tokens"],
+        )
+
+    # Fallback if no keys configured
+    return ChatGoogleGenerativeAI(
         model=model_cfg["id"],
-        google_api_key=google_api_key or "dummy_key",
+        google_api_key="dummy_key",
         max_output_tokens=model_cfg["max_tokens"],
         temperature=0.2,
     )
-
-    return ChatGoogleGenerativeAI(**llm_kwargs)
 
 
 def render_model_badge():

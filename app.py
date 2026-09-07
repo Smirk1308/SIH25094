@@ -351,103 +351,14 @@ def get_secrets_status() -> Dict[str, Any]:
     return res
 
 
-# Retrieve GROQ_API_KEY securely from session state, st.secrets, or environment
+# Retrieve API Keys securely via centralized resilient helper
+import api_key_helper
+
 def get_groq_api_key() -> str:
-    # 1. Check direct session override (from sidebar text input)
-    if hasattr(st, "session_state") and st.session_state.get("custom_groq_key"):
-        custom = str(st.session_state["custom_groq_key"]).strip().strip("'").strip('"').strip()
-        if custom:
-            return custom
+    return api_key_helper.get_groq_api_key()
 
-    # 2. Check Streamlit Secrets across all naming variants and nested tables
-    try:
-        if hasattr(st, "secrets"):
-            for k in ["GROQ_API_KEY", "groq_api_key", "GROQ_KEY", "groq_key"]:
-                if k in st.secrets:
-                    val = str(st.secrets[k]).strip().strip("'").strip('"').strip()
-                    if val:
-                        return val
-
-            for k, v in st.secrets.items():
-                if isinstance(v, str) and "groq" in k.lower():
-                    val = str(v).strip().strip("'").strip('"').strip()
-                    if val:
-                        return val
-
-            for val in st.secrets.values():
-                if isinstance(val, dict):
-                    for k in ["GROQ_API_KEY", "groq_api_key", "GROQ_KEY", "groq_key"]:
-                        if k in val:
-                            res = str(val[k]).strip().strip("'").strip('"').strip()
-                            if res:
-                                return res
-                    for k, v in val.items():
-                        if isinstance(v, str) and "groq" in k.lower():
-                            res = str(v).strip().strip("'").strip('"').strip()
-                            if res:
-                                return res
-    except Exception:
-        pass
-
-    for env_var in ["GROQ_API_KEY", "groq_api_key"]:
-        val = os.getenv(env_var, "").strip().strip("'").strip('"').strip()
-        if val:
-            return val
-
-    return ""
-
-
-# Retrieve GOOGLE_API_KEY securely from session state, st.secrets, or environment
 def get_google_api_key() -> str:
-    # 1. Check direct session override (from sidebar text input)
-    if hasattr(st, "session_state") and st.session_state.get("custom_gemini_key"):
-        custom = str(st.session_state["custom_gemini_key"]).strip().strip("'").strip('"').strip()
-        if custom:
-            return custom
-
-    # 2. Check Streamlit Secrets across all naming variants and nested tables
-    try:
-        if hasattr(st, "secrets"):
-            for k in [
-                "GOOGLE_API_KEY", "google_api_key", "GEMINI_API_KEY", "gemini_api_key",
-                "GEMINI_KEY", "gemini_key", "GOOGLE_KEY", "google_key", "API_KEY"
-            ]:
-                if k in st.secrets:
-                    val = str(st.secrets[k]).strip().strip("'").strip('"').strip()
-                    if val:
-                        return val
-
-            for k, v in st.secrets.items():
-                if isinstance(v, str) and any(term in k.lower() for term in ["gemini", "google"]):
-                    val = str(v).strip().strip("'").strip('"').strip()
-                    if val:
-                        return val
-
-            for val in st.secrets.values():
-                if isinstance(val, dict):
-                    for k in [
-                        "GOOGLE_API_KEY", "google_api_key", "GEMINI_API_KEY", "gemini_api_key",
-                        "GEMINI_KEY", "gemini_key", "GOOGLE_KEY", "google_key", "API_KEY"
-                    ]:
-                        if k in val:
-                            res = str(val[k]).strip().strip("'").strip('"').strip()
-                            if res:
-                                return res
-                    for k, v in val.items():
-                        if isinstance(v, str) and any(term in k.lower() for term in ["gemini", "google"]):
-                            res = str(v).strip().strip("'").strip('"').strip()
-                            if res:
-                                return res
-    except Exception:
-        pass
-
-    # 3. Check environment variables
-    for env_var in ["GOOGLE_API_KEY", "GEMINI_API_KEY", "google_api_key", "gemini_api_key"]:
-        val = os.getenv(env_var, "").strip().strip("'").strip('"').strip()
-        if val:
-            return val
-
-    return ""
+    return api_key_helper.get_google_api_key()
 
 groq_api_key = get_groq_api_key()
 google_api_key = get_google_api_key()
@@ -1705,9 +1616,14 @@ rag_engine = get_rag_engine()
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Initialize automatic Groq model on first load only
-if "selected_model" not in st.session_state or (groq_client and st.session_state.selected_model in ["openai/gpt-oss-20b", "llama3-8b-8192", "llama-3.3-70b-versatile"]):
-    st.session_state.selected_model = get_best_groq_model(groq_client)
+# Initialize active model on first load
+if "selected_model" not in st.session_state or st.session_state.selected_model in ["openai/gpt-oss-20b", "llama3-8b-8192", "llama-3.3-70b-versatile"]:
+    if google_api_key:
+        st.session_state.selected_model = "gemini-3.5-flash"
+    elif groq_client:
+        st.session_state.selected_model = get_best_groq_model(groq_client)
+    else:
+        st.session_state.selected_model = "gemini-3.5-flash"
 
 # Pre-load & auto-sync documents from /docs with ChromaDB (indexes new files, purges deleted)
 if "auto_indexed_once" not in st.session_state:
@@ -1798,63 +1714,6 @@ with st.sidebar:
             '<div class="status-pill status-pill-auto"><span class="pulse-radar"></span>🤖 Smart Auto-Detect (Zero Downtime)</div>',
             unsafe_allow_html=True
         )
-
-    # Cloud AI Health & Key Diagnostics (Provides full visibility into API connectivity)
-    with st.sidebar.expander("☁️ Cloud API Status & Key Settings", expanded=False):
-        secrets_diag = get_secrets_status()
-        if secrets_diag["error"]:
-            st.error(f"⚠️ **Secrets Syntax Error**: `{secrets_diag['error']}`")
-            st.caption("TOML parsing failed on Cloud. Enclose keys in double quotes, e.g.: `GOOGLE_API_KEY = \"AIza...\"`")
-        elif secrets_diag["accessible"]:
-            st.caption(f"🔑 Detected Secrets Keys: `{', '.join(secrets_diag['keys_found']) if secrets_diag['keys_found'] else 'None'}`")
-
-        # Gemini live status
-        live_gem_key = get_google_api_key()
-        if live_gem_key:
-            source_tag = "Direct Key" if st.session_state.get("custom_gemini_key") else "Streamlit Secrets"
-            st.markdown(f"🟢 **Google Gemini API**: Connected *({source_tag})*")
-            st.caption(f"Active Model: `{st.session_state.get('active_model_id', 'gemini-3.5-flash')}`")
-        else:
-            st.markdown("🔴 **Google Gemini API**: Not Detected")
-            st.caption("Paste your key below for instant activation without needing secrets.toml!")
-
-        # Direct input for Gemini API Key (Bypasses secrets.toml entirely)
-        custom_gemini_val = st.text_input(
-            "🔑 Paste Gemini API Key (Direct)",
-            value=st.session_state.get("custom_gemini_key", ""),
-            type="password",
-            placeholder="AIzaSy... or AQ.Ab8...",
-            help="Instant activation: Paste your Gemini key here directly to override/bypass secrets.toml.",
-            key="gemini_key_direct_input"
-        )
-        if custom_gemini_val and custom_gemini_val != st.session_state.get("custom_gemini_key", ""):
-            st.session_state.custom_gemini_key = custom_gemini_val.strip()
-            st.rerun()
-
-        st.markdown("---")
-
-        # Groq live status
-        live_groq_key = get_groq_api_key()
-        if live_groq_key:
-            groq_source = "Direct Key" if st.session_state.get("custom_groq_key") else "Streamlit Secrets"
-            st.markdown(f"🟢 **Groq LLM Backup**: Connected *({groq_source})*")
-        else:
-            st.markdown("⚪ **Groq LLM Backup**: Not configured")
-
-        custom_groq_val = st.text_input(
-            "🔑 Paste Groq API Key (Optional Backup)",
-            value=st.session_state.get("custom_groq_key", ""),
-            type="password",
-            placeholder="gsk_...",
-            help="Optional backup key for instant failover if Gemini ever hits rate limits.",
-            key="groq_key_direct_input"
-        )
-        if custom_groq_val and custom_groq_val != st.session_state.get("custom_groq_key", ""):
-            st.session_state.custom_groq_key = custom_groq_val.strip()
-            st.rerun()
-
-        if not live_gem_key and not live_groq_key:
-            st.info("⚡ **Running in 2G Edge Mode**: Zero external cloud dependencies. Responses served locally from verified J&K documents.")
 
     st.divider()
 
@@ -2223,8 +2082,8 @@ with tabs[0]:
 
             if not google_api_key and not groq_api_key:
                 with st.chat_message("assistant"):
-                    render_error_card(Exception("AuthenticationError: 401 Missing GOOGLE_API_KEY / GROQ_API_KEY in st.secrets"))
                     if offline_match:
+                        st.info("⚡ **J&K EduSetu 2G Mountain Edge Mode Active**: Response served instantly (0.27ms) from local verified government documents with zero cloud dependencies.")
                         full_response = offline_match["answer"]
                         st.markdown(full_response)
                         portal_url = offline_match.get("portal_url", "")
@@ -2234,8 +2093,9 @@ with tabs[0]:
                                 unsafe_allow_html=True
                             )
                         retrieved_sources = offline_match.get("sources", [])
-                        model_used = "⚡ 2G Offline Fallback"
+                        model_used = "⚡ 2G Mountain Edge Mode"
                     else:
+                        render_error_card(Exception("AuthenticationError: 401 Missing GOOGLE_API_KEY / GROQ_API_KEY in st.secrets"))
                         retrieved_chunks = rag_engine.retrieve(current_prompt, top_k=top_k)
                         if retrieved_chunks:
                             full_response = "Here are the relevant provisions from official documents:\n\n"

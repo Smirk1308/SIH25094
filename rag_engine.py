@@ -660,91 +660,15 @@ Instructions:
         except Exception:
             pass
 
-        # Resolve Gemini API Key (checking explicit argument, session state override, multiple casing, nested secrets tables, and env vars)
+        # Resolve Gemini and Groq API Keys via centralized resilient helper
+        import api_key_helper
         resolved_google_key = str(google_api_key).strip().strip("'").strip('"').strip() if google_api_key else ""
-        if not resolved_google_key and hasattr(st, "session_state") and st.session_state.get("custom_gemini_key"):
-            resolved_google_key = str(st.session_state["custom_gemini_key"]).strip().strip("'").strip('"').strip()
-
         if not resolved_google_key:
-            try:
-                if hasattr(st, "secrets"):
-                    for k in [
-                        "GOOGLE_API_KEY", "google_api_key", "GEMINI_API_KEY", "gemini_api_key",
-                        "GEMINI_KEY", "gemini_key", "GOOGLE_KEY", "google_key", "API_KEY"
-                    ]:
-                        if k in st.secrets:
-                            resolved_google_key = str(st.secrets[k]).strip().strip("'").strip('"').strip()
-                            break
-                    if not resolved_google_key:
-                        for k, v in st.secrets.items():
-                            if isinstance(v, str) and any(term in k.lower() for term in ["gemini", "google"]):
-                                resolved_google_key = str(v).strip().strip("'").strip('"').strip()
-                                break
-                    if not resolved_google_key:
-                        for val in st.secrets.values():
-                            if isinstance(val, dict):
-                                for k in [
-                                    "GOOGLE_API_KEY", "google_api_key", "GEMINI_API_KEY", "gemini_api_key",
-                                    "GEMINI_KEY", "gemini_key", "GOOGLE_KEY", "google_key", "API_KEY"
-                                ]:
-                                    if k in val:
-                                        resolved_google_key = str(val[k]).strip().strip("'").strip('"').strip()
-                                        break
-                                if not resolved_google_key:
-                                    for k, v in val.items():
-                                        if isinstance(v, str) and any(term in k.lower() for term in ["gemini", "google"]):
-                                            resolved_google_key = str(v).strip().strip("'").strip('"').strip()
-                                            break
-                                if resolved_google_key:
-                                    break
-            except Exception:
-                pass
-        if not resolved_google_key:
-            for env_var in ["GOOGLE_API_KEY", "GEMINI_API_KEY", "google_api_key", "gemini_api_key"]:
-                val = os.getenv(env_var, "").strip().strip("'").strip('"').strip()
-                if val:
-                    resolved_google_key = val
-                    break
+            resolved_google_key = api_key_helper.get_google_api_key()
 
-        # Resolve Groq API Key (checking explicit argument, session state override, multiple casing, nested secrets tables, and env vars)
         resolved_groq_key = str(api_key).strip().strip("'").strip('"').strip() if api_key else ""
-        if not resolved_groq_key and hasattr(st, "session_state") and st.session_state.get("custom_groq_key"):
-            resolved_groq_key = str(st.session_state["custom_groq_key"]).strip().strip("'").strip('"').strip()
-
         if not resolved_groq_key:
-            try:
-                if hasattr(st, "secrets"):
-                    for k in ["GROQ_API_KEY", "groq_api_key", "GROQ_KEY", "groq_key"]:
-                        if k in st.secrets:
-                            resolved_groq_key = str(st.secrets[k]).strip().strip("'").strip('"').strip()
-                            break
-                    if not resolved_groq_key:
-                        for k, v in st.secrets.items():
-                            if isinstance(v, str) and "groq" in k.lower():
-                                resolved_groq_key = str(v).strip().strip("'").strip('"').strip()
-                                break
-                    if not resolved_groq_key:
-                        for val in st.secrets.values():
-                            if isinstance(val, dict):
-                                for k in ["GROQ_API_KEY", "groq_api_key", "GROQ_KEY", "groq_key"]:
-                                    if k in val:
-                                        resolved_groq_key = str(val[k]).strip().strip("'").strip('"').strip()
-                                        break
-                                if not resolved_groq_key:
-                                    for k, v in val.items():
-                                        if isinstance(v, str) and "groq" in k.lower():
-                                            resolved_groq_key = str(v).strip().strip("'").strip('"').strip()
-                                            break
-                                if resolved_groq_key:
-                                    break
-            except Exception:
-                pass
-        if not resolved_groq_key:
-            for env_var in ["GROQ_API_KEY", "groq_api_key"]:
-                val = os.getenv(env_var, "").strip().strip("'").strip('"').strip()
-                if val:
-                    resolved_groq_key = val
-                    break
+            resolved_groq_key = api_key_helper.get_groq_api_key()
 
         active_tier = st.session_state.get("active_model_tier", "simple") if hasattr(st, "session_state") else "simple"
         system_content = SYSTEM_PROMPTS.get(active_tier, SYSTEM_PROMPTS["simple"])
