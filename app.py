@@ -1710,8 +1710,10 @@ with st.sidebar:
             unsafe_allow_html=True
         )
     else:
+        active_tier_name = st.session_state.get("active_model_tier", "simple").title()
+        active_mod = st.session_state.get("active_model_id", "gemini-3.5-flash-lite")
         st.markdown(
-            '<div class="status-pill status-pill-auto"><span class="pulse-radar"></span>🤖 Smart Auto-Detect (Zero Downtime)</div>',
+            f'<div class="status-pill status-pill-auto"><span class="pulse-radar"></span>🤖 Smart Auto-Detect ({active_tier_name}: {active_mod})</div>',
             unsafe_allow_html=True
         )
 
@@ -2155,6 +2157,7 @@ with tabs[0]:
                                 st.markdown(full_response)
 
                         model_used = gen_result.get("model_used", st.session_state.selected_model)
+                        st.session_state.selected_model = model_used
                         retrieved_sources = gen_result.get("sources", [])
                         search_query = gen_result.get("search_query", current_prompt)
 

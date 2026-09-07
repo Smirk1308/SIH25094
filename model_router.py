@@ -8,30 +8,33 @@ import os
 import streamlit as st
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-# Model tier definitions (aligned with standard Google AI Studio free tier limits)
+# Model tier definitions (aligned with Google AI Studio free tier limits & dynamic capability)
 MODELS = {
     "simple": {
         "id": "gemini-3.5-flash-lite",
-        "max_tokens": 1024,
+        "max_tokens": 2048,
         "label": "Fast",
         "emoji": "⚡",
         "daily_limit": 1500,
     },
     "medium": {
         "id": "gemini-3.5-flash",
-        "max_tokens": 1500,
+        "max_tokens": 3072,
         "label": "Standard",
         "emoji": "🎯",
         "daily_limit": 1500,
     },
     "complex": {
-        "id": "gemini-3.5-flash",
-        "max_tokens": 2048,
+        "id": "gemini-3.7-flash",
+        "max_tokens": 4096,
         "label": "Deep Analysis",
         "emoji": "🧠",
         "daily_limit": 1500,
     },
 }
+
+# In-family fallback sequence for Gemini models if a specific model encounters quota (429) or spikes (503)
+GEMINI_FALLBACK_POOL = ["gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-3.7-flash", "gemini-3.5-flash"]
 
 # Keywords that signal query complexity
 COMPLEX_SIGNALS = [
@@ -39,13 +42,38 @@ COMPLEX_SIGNALS = [
     "comprehensive", "full analysis", "everything i can",
     "what are all my options", "complete guide", "step by step plan",
     "both admission and scholarship", "analyze my", "eligibility for all",
+    "pcm", "pcb", "percentage", "marks", "cutoff", "category",
+    # Urdu complex signals
+    "سکالرشپ", "مکمل تفصیل", "اہلیت برائے", "پوری تفصیل", "تمام وظائف", "رہنمائی اور داخلہ",
+    # Hindi complex signals
+    "सभी छात्रवृत्ति", "विस्तृत जानकारी", "पूरी जानकारी", "प्रोफाइल के आधार पर",
 ]
 
 MEDIUM_SIGNALS = [
     "eligible", "qualify", "should i", "recommend", "suggest",
     "difference between", "which is better", "compare", "options for",
-    "what can i apply", "how to apply", "what documents",
+    "options i have", "what can i apply", "how to apply", "what documents",
+    "college", "seats", "quota", "reservation", "merit", "fee",
+    # Urdu medium signals
+    "کالج", "داخلہ", "رہنمائی", "موازنہ", "کونسا بہتر", "دستاویزات", "درخواست کیسے",
+    # Hindi medium signals
+    "पात्रता", "प्रवेश", "कटऑफ", "तुलना", "दस्तावेज़", "आवेदन कैसे",
 ]
+
+
+def is_multilingual_query(text: str) -> bool:
+    """Check if query is non-English (e.g. Urdu, Kashmiri, Hindi) or contains non-Latin scripts."""
+    if not text:
+        return False
+    for char in text:
+        code = ord(char)
+        # Arabic / Perso-Arabic (Urdu, Kashmiri) or Devanagari (Hindi)
+        if (0x0600 <= code <= 0x06FF) or (0x0750 <= code <= 0x077F) or (0xFB50 <= code <= 0xFEFF) or (0x0900 <= code <= 0x097F):
+            return True
+    lower_t = text.lower()
+    if "[note: " in lower_t and any(lang in lower_t for lang in ["urdu", "hindi", "kashmiri", "اردو", "हिंदी", "کٲشُر"]):
+        return True
+    return False
 
 
 def classify_complexity(query: str, history_length: int = 0) -> str:
@@ -58,11 +86,15 @@ def classify_complexity(query: str, history_length: int = 0) -> str:
         return "complex"
 
     # Check complex signals first
-    if any(signal in q for signal in COMPLEX_SIGNALS) or word_count > 30:
+    if any(signal in q for signal in COMPLEX_SIGNALS) or word_count > 25:
         return "complex"
 
     # Check medium signals
-    if any(signal in q for signal in MEDIUM_SIGNALS) or word_count > 15:
+    if any(signal in q for signal in MEDIUM_SIGNALS) or word_count > 12:
+        return "medium"
+
+    # Non-Latin / Multilingual scripts (Urdu, Hindi, Kashmiri) require richer vocabulary and context
+    if is_multilingual_query(query) and word_count >= 4:
         return "medium"
 
     return "simple"
@@ -100,6 +132,16 @@ def get_routed_model_info(query: str = "", history_length: int = 0) -> dict:
         else:
             break
     model_cfg = MODELS[tier]
+
+    # Non-English / Multilingual responses consume 3-4x more tokens per word due to subword byte encoding.
+    # We guarantee a generous minimum token allocation of 3,500 tokens so Urdu/Hindi/Kashmiri never truncates.
+    max_tokens = model_cfg["max_tokens"]
+    is_multi = is_multilingual_query(query)
+    if hasattr(st, "session_state") and st.session_state.get("selected_language", "English") != "English":
+        is_multi = True
+    if is_multi:
+        max_tokens = max(max_tokens, 3500)
+
     if hasattr(st, "session_state"):
         st.session_state.active_model_tier = tier
         st.session_state.active_model_id = model_cfg["id"]
@@ -107,7 +149,7 @@ def get_routed_model_info(query: str = "", history_length: int = 0) -> dict:
     return {
         "tier": tier,
         "model_id": model_cfg["id"],
-        "max_tokens": model_cfg["max_tokens"],
+        "max_tokens": max_tokens,
         "label": model_cfg["label"],
         "emoji": model_cfg["emoji"],
     }

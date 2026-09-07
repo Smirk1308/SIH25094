@@ -41,7 +41,7 @@ CHUNK_OVERLAP = 50
 TOKENIZER_ENCODING = "cl100k_base"
 
 # Smart Model Router import for complexity-based tier selection
-from model_router import get_routed_model_info, render_query_info
+from model_router import get_routed_model_info, render_query_info, GEMINI_FALLBACK_POOL
 
 SYSTEM_PROMPTS = {
     "simple": (
@@ -655,6 +655,10 @@ Instructions:
 
         # Determine history length and route LLM using model_router
         history_length = len(effective_history)
+        routed_cfg = get_routed_model_info(query, history_length)
+        active_model_id = routed_cfg["model_id"]
+        max_tokens_to_use = routed_cfg.get("max_tokens", 3072)
+
         try:
             render_query_info(query, history_length)
         except Exception:
@@ -690,82 +694,92 @@ Instructions:
 
         # 1. Attempt Primary: Gemini via Google GenAI SDK (Sub-second TTFT, multilingual)
         if resolved_google_key:
-            try:
-                routed_cfg = get_routed_model_info(query, history_length)
-                active_model_id = routed_cfg["model_id"]
-                client_genai = self.get_genai_client(resolved_google_key)
+            client_genai = self.get_genai_client(resolved_google_key)
 
-                # Format conversation history for google.genai chat
-                genai_history = []
-                if effective_history:
-                    max_msgs = exchanges_to_keep * 2
-                    recent_turns = [turn for turn in effective_history if turn.get("role") in ["user", "assistant"]][-max_msgs:]
-                    for turn in recent_turns:
-                        role = "user" if turn.get("role") == "user" else "model"
-                        genai_history.append(
-                            types.Content(role=role, parts=[types.Part.from_text(text=turn.get("content", ""))])
-                        )
-
-                chat = client_genai.chats.create(
-                    model=active_model_id,
-                    history=genai_history,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_content,
-                        temperature=0.3,
-                        max_output_tokens=routed_cfg.get("max_tokens", 1024),
+            # Format conversation history for google.genai chat
+            genai_history = []
+            if effective_history:
+                max_msgs = exchanges_to_keep * 2
+                recent_turns = [turn for turn in effective_history if turn.get("role") in ["user", "assistant"]][-max_msgs:]
+                for turn in recent_turns:
+                    role = "user" if turn.get("role") == "user" else "model"
+                    genai_history.append(
+                        types.Content(role=role, parts=[types.Part.from_text(text=turn.get("content", ""))])
                     )
-                )
 
-                if stream:
-                    response_stream = chat.send_message_stream(prompt)
+            # Candidate Gemini models: active routed model first, followed by resilient pool
+            candidate_models = [active_model_id]
+            for cm in GEMINI_FALLBACK_POOL:
+                if cm not in candidate_models:
+                    candidate_models.append(cm)
 
-                    def resilient_stream_generator() -> Generator[str, None, None]:
-                        try:
-                            for chunk in response_stream:
-                                if chunk.text:
-                                    yield chunk.text
-                        except Exception as stream_err:
-                            logger.warning(f"Gemini streaming exception: {stream_err}. Attempting Groq fallback...")
-                            if resolved_groq_key:
-                                groq_client = self.get_groq_client(resolved_groq_key)
-                                stream_resp = groq_client.chat.completions.create(
-                                    model=groq_model,
-                                    messages=groq_messages,
-                                    max_tokens=800,
-                                    temperature=0.3,
-                                    stream=True
-                                )
-                                for chunk in stream_resp:
-                                    if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
-                                        yield chunk.choices[0].delta.content
-                            else:
-                                raise stream_err
+            last_gemini_err = None
+            for try_model in candidate_models:
+                try:
+                    chat = client_genai.chats.create(
+                        model=try_model,
+                        history=genai_history,
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_content,
+                            temperature=0.3,
+                            max_output_tokens=max_tokens_to_use,
+                        )
+                    )
 
-                    return {
-                        "stream": resilient_stream_generator(),
-                        "sources": context_chunks,
-                        "search_query": search_query,
-                        "model_used": active_model_id
-                    }
-                else:
-                    response = chat.send_message(prompt)
-                    content = response.text or ""
-                    _RESPONSE_CACHE[cache_key] = {
-                        "answer": content,
-                        "sources": context_chunks,
-                        "search_query": search_query,
-                        "model_used": active_model_id
-                    }
-                    return {
-                        "answer": content,
-                        "sources": context_chunks,
-                        "search_query": search_query,
-                        "model_used": active_model_id
-                    }
-            except Exception as e:
-                logger.warning(f"Gemini primary failed: {e}. Falling back to Groq if available.")
-                if not resolved_groq_key:
-                    raise e
+                    if stream:
+                        response_stream = chat.send_message_stream(prompt)
+
+                        def resilient_stream_generator(current_stream, model_tag: str) -> Generator[str, None, None]:
+                            try:
+                                for chunk in current_stream:
+                                    if chunk.text:
+                                        yield chunk.text
+                            except Exception as stream_err:
+                                logger.warning(f"Gemini streaming exception on {model_tag}: {stream_err}. Attempting Groq fallback...")
+                                if resolved_groq_key:
+                                    groq_client = self.get_groq_client(resolved_groq_key)
+                                    stream_resp = groq_client.chat.completions.create(
+                                        model=groq_model,
+                                        messages=groq_messages,
+                                        max_tokens=2048,
+                                        temperature=0.3,
+                                        stream=True
+                                    )
+                                    for chunk in stream_resp:
+                                        if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                                            yield chunk.choices[0].delta.content
+                                else:
+                                    raise stream_err
+
+                        return {
+                            "stream": resilient_stream_generator(response_stream, try_model),
+                            "sources": context_chunks,
+                            "search_query": search_query,
+                            "model_used": try_model
+                        }
+                    else:
+                        response = chat.send_message(prompt)
+                        content = response.text or ""
+                        _RESPONSE_CACHE[cache_key] = {
+                            "answer": content,
+                            "sources": context_chunks,
+                            "search_query": search_query,
+                            "model_used": try_model
+                        }
+                        return {
+                            "answer": content,
+                            "sources": context_chunks,
+                            "search_query": search_query,
+                            "model_used": try_model
+                        }
+                except Exception as e:
+                    last_gemini_err = e
+                    logger.warning(f"Gemini attempt with model '{try_model}' failed: {e}. Checking next candidate in pool...")
+                    continue
+
+            logger.warning(f"All Gemini models in pool failed (Last error: {last_gemini_err}). Falling back to Groq if available.")
+            if not resolved_groq_key and last_gemini_err:
+                raise last_gemini_err
 
         # 2. Attempt Fallback: Groq (Direct Groq SDK with active model)
         if resolved_groq_key:
@@ -775,7 +789,7 @@ Instructions:
                 stream_resp = groq_client.chat.completions.create(
                     model=groq_model,
                     messages=groq_messages,
-                    max_tokens=800,
+                    max_tokens=2048,
                     temperature=0.3,
                     stream=True
                 )
@@ -793,7 +807,7 @@ Instructions:
                 resp = groq_client.chat.completions.create(
                     model=groq_model,
                     messages=groq_messages,
-                    max_tokens=800,
+                    max_tokens=2048,
                     temperature=0.3
                 )
                 content = resp.choices[0].message.content if resp.choices else ""
