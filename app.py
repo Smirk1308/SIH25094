@@ -2079,37 +2079,7 @@ with tabs[0]:
         else:
             offline_match = get_2g_response(current_prompt)
 
-            # In Smart Auto-Detect: Instant 2G Edge delivery if high confidence
-            if network_mode == "🤖 Smart Auto-Detect" and offline_match and offline_match.get("confidence_score", 0) >= 2.0:
-                with st.chat_message("assistant"):
-                    full_response = offline_match["answer"]
-                    st.markdown(full_response)
-                    portal_url = offline_match.get("portal_url", "")
-                    if portal_url:
-                        st.markdown(
-                            f'<a class="portal-action-btn" href="{portal_url}" target="_blank">🔗 Open Official Portal</a>',
-                            unsafe_allow_html=True
-                        )
-                    retrieved_sources = offline_match.get("sources", [])
-                    model_used = f"⚡ 2G Edge Engine ({offline_match['latency_ms']}ms | Zero Cloud Calls)"
-
-                    if retrieved_sources:
-                        with st.expander(f"📚 View {len(retrieved_sources)} Cited Source Chunks (Engine: {model_used})"):
-                            for i, src in enumerate(retrieved_sources, 1):
-                                st.caption(f"**Source {i}: {src.get('source', 'Document')} (Page {src.get('page', '?')})** • Similarity: {src.get('similarity', 0.0):.2f}")
-                                if src.get("text"):
-                                    st.markdown(f"> {src.get('text', '')}")
-
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": full_response,
-                        "sources": retrieved_sources,
-                        "model_used": model_used,
-                        "portal_url": portal_url,
-                        "search_query": current_prompt
-                    })
-
-            elif not google_api_key and not groq_api_key:
+            if not google_api_key and not groq_api_key:
                 with st.chat_message("assistant"):
                     render_error_card(Exception("AuthenticationError: 401 Missing GOOGLE_API_KEY / GROQ_API_KEY in st.secrets"))
                     if offline_match:

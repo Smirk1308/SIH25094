@@ -11,33 +11,6 @@ from typing import Dict, List, Any, Optional
 # Pre-computed Knowledge Base of verified J&K Education, Scholarship & Career Records
 OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
     {
-        "id": "welcome_edusetu",
-        "category": "Orientation",
-        "title": "Welcome to J&K EduSetu — Your Bridge to Education & Opportunities",
-        "keywords": [
-            "hello", "hi", "hey", "namaste", "salam", "assalam", "adab", "help",
-            "who are you", "what can you do", "guide me", "start", "introduce", "kya hai",
-            "ہیلو", "سلام", "السلام علیکم", "آداب", "مدد", "تعارف",
-            "नमस्ते", "प्रणाम", "मदद", "शुरुआत", "परिचय"
-        ],
-        "summary": (
-            "**Welcome to J&K EduSetu (Your Bridge to Education & Opportunities)!** 🎓\n\n"
-            "I am your autonomous AI Career, Scholarship & College Advisor for Jammu, Kashmir, and Ladakh students, built by Team Error404.\n\n"
-            "**How I can guide you today:**\n"
-            "• **Scholarships**: Eligibility, documents & stipends for **AICTE PMSSS (5,000 slots)**, Post-Matric, and Merit schemes.\n"
-            "• **College Seats & Cutoffs**: Verified seat matrices for **NIT Srinagar, IIT Jammu, IUST, SMVDU, GMCs**, and 26+ UT institutes.\n"
-            "• **Reservation Policies**: Mathematically exact quotas under **S.O. 176 (2024)** (OM, RBA, SC, ST, EWS, PSP, ALC/IB).\n"
-            "• **Exams & Recruitment**: Preparation guidance for **JKCET, JKSSB, JKPSC, NEET, JEE Main**.\n"
-            "• **2G Mountain Edge Mode**: Sub-millisecond verified answers even in low-bandwidth remote border zones!\n\n"
-            "Ask me any question in **English, اردو (Urdu), हिंदी (Hindi), or کٲشُر (Kashmiri)**!"
-        ),
-        "portal_url": "https://www.aicte-india.org/bureaus/jk",
-        "sources": [
-            {"source": "jk_scholarships.txt", "page": 1, "similarity": 0.99},
-            {"source": "Methodology_2025-26.pdf", "page": 1, "similarity": 0.99}
-        ]
-    },
-    {
         "id": "pmsss_jk",
         "category": "Scholarships",
         "title": "Prime Minister's Special Scholarship Scheme (PMSSS J&K)",
@@ -573,14 +546,15 @@ class OfflineQueryEngine:
             # 1. Exact phrase match boost (checks both raw and cleaned query)
             for kw, ckw in zip(raw_keywords, clean_keywords):
                 if kw in q_lower or (ckw and ckw in q_clean):
-                    score += 4.5
-                elif any(word in q_clean for word in ckw.split() if len(word) > 2):
-                    score += 1.8
+                    score += 5.0
+                    break
 
-            # 2. Token overlap score (Jaccard-like overlap)
-            common_tokens = q_tokens.intersection(kw_tokens)
+            # 2. Meaningful token overlap score (excluding generic stop words)
+            stop_words = {"the", "and", "for", "with", "that", "this", "what", "how", "can", "you", "tell", "have", "all", "are", "about", "regarding", "options", "give", "some"}
+            meaningful_tokens = q_tokens - stop_words
+            common_tokens = meaningful_tokens.intersection(kw_tokens)
             if common_tokens:
-                score += len(common_tokens) * 2.2
+                score += len(common_tokens) * 2.5
 
             # Normalize against query length
             score = score / (len(q_tokens) ** 0.45)
@@ -591,8 +565,8 @@ class OfflineQueryEngine:
 
         elapsed_ms = (time.time() - start_time) * 1000
 
-        # Match confidence threshold
-        if best_entry and best_score >= 1.8:
+        # Match confidence threshold: requires solid keyword or exact phrase match
+        if best_entry and best_score >= 2.5:
             return {
                 "matched": True,
                 "id": best_entry["id"],
