@@ -11,6 +11,33 @@ from typing import Dict, List, Any, Optional
 # Pre-computed Knowledge Base of verified J&K Education, Scholarship & Career Records
 OFFLINE_KNOWLEDGE_BASE: List[Dict[str, Any]] = [
     {
+        "id": "welcome_edusetu",
+        "category": "Orientation",
+        "title": "Welcome to J&K EduSetu — Your Bridge to Education & Opportunities",
+        "keywords": [
+            "hello", "hi", "hey", "namaste", "salam", "assalam", "adab", "help",
+            "who are you", "what can you do", "guide me", "start", "introduce", "kya hai",
+            "ہیلو", "سلام", "السلام علیکم", "آداب", "مدد", "تعارف",
+            "नमस्ते", "प्रणाम", "मदद", "शुरुआत", "परिचय"
+        ],
+        "summary": (
+            "**Welcome to J&K EduSetu (Your Bridge to Education & Opportunities)!** 🎓\n\n"
+            "I am your autonomous AI Career, Scholarship & College Advisor for Jammu, Kashmir, and Ladakh students, built by Team Error404.\n\n"
+            "**How I can guide you today:**\n"
+            "• **Scholarships**: Eligibility, documents & stipends for **AICTE PMSSS (5,000 slots)**, Post-Matric, and Merit schemes.\n"
+            "• **College Seats & Cutoffs**: Verified seat matrices for **NIT Srinagar, IIT Jammu, IUST, SMVDU, GMCs**, and 26+ UT institutes.\n"
+            "• **Reservation Policies**: Mathematically exact quotas under **S.O. 176 (2024)** (OM, RBA, SC, ST, EWS, PSP, ALC/IB).\n"
+            "• **Exams & Recruitment**: Preparation guidance for **JKCET, JKSSB, JKPSC, NEET, JEE Main**.\n"
+            "• **2G Mountain Edge Mode**: Sub-millisecond verified answers even in low-bandwidth remote border zones!\n\n"
+            "Ask me any question in **English, اردو (Urdu), हिंदी (Hindi), or کٲشُر (Kashmiri)**!"
+        ),
+        "portal_url": "https://www.aicte-india.org/bureaus/jk",
+        "sources": [
+            {"source": "jk_scholarships.txt", "page": 1, "similarity": 0.99},
+            {"source": "Methodology_2025-26.pdf", "page": 1, "similarity": 0.99}
+        ]
+    },
+    {
         "id": "pmsss_jk",
         "category": "Scholarships",
         "title": "Prime Minister's Special Scholarship Scheme (PMSSS J&K)",

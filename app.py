@@ -2216,7 +2216,11 @@ with tabs[0]:
                             failover_model = f"⚡ 2G Edge Auto-Failover ({offline_match['latency_ms']}ms)"
                         else:
                             render_error_card(e)
-                            retrieved_chunks = rag_engine.retrieve(current_prompt, top_k=3)
+                            try:
+                                retrieved_chunks = rag_engine.retrieve(current_prompt, top_k=3)
+                            except Exception:
+                                retrieved_chunks = []
+
                             if retrieved_chunks:
                                 full_response = "Here are the verified provisions from the local government archives:\n\n"
                                 for idx, chunk in enumerate(retrieved_chunks, 1):
@@ -2224,10 +2228,10 @@ with tabs[0]:
                                 st.markdown(full_response)
                                 retrieved_sources = retrieved_chunks
                             else:
-                                full_response = "Please check your connectivity or switch to ⚡ 2G Ultra-Lite mode."
+                                full_response = "Please check your connectivity or switch to **⚡ 2G Ultra-Lite (Offline)** mode in the sidebar."
                                 st.markdown(full_response)
                                 retrieved_sources = []
-                            failover_model = "⚡ 2G Local ChromaDB Fallback"
+                            failover_model = "⚡ 2G Local Knowledge Fallback"
                             portal_url = ""
 
                         st.session_state.messages.append({

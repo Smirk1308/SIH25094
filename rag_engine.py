@@ -82,8 +82,9 @@ class LazySentenceTransformerEmbeddingFunction(EmbeddingFunction[Documents]):
 
     def _get_fn(self):
         if self._fn is None:
-            os.environ["HF_HUB_OFFLINE"] = "1"
-            os.environ["TRANSFORMERS_OFFLINE"] = "1"
+            # Ensure no offline flags block download on fresh cloud containers (e.g. Streamlit Cloud)
+            os.environ.pop("HF_HUB_OFFLINE", None)
+            os.environ.pop("TRANSFORMERS_OFFLINE", None)
             os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
             os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
             os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -428,37 +429,48 @@ class RAGEngine:
         }
 
     def retrieve(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-        """Retrieve top-k relevant chunks from ChromaDB for a given query."""
-        self._ensure_collection()
-        if self.collection.count() == 0:
+        """Retrieve top-k relevant chunks from ChromaDB for a given query, with safe 2G fallback."""
+        try:
+            self._ensure_collection()
+            if self.collection.count() == 0:
+                return []
+
+            results = self.collection.query(
+                query_texts=[query],
+                n_results=min(top_k, self.collection.count()),
+                include=["documents", "metadatas", "distances"]
+            )
+
+            retrieved = []
+            if results and "documents" in results and results["documents"]:
+                docs = results["documents"][0]
+                metas = results["metadatas"][0] if "metadatas" in results else [{}] * len(docs)
+                dists = results["distances"][0] if "distances" in results else [0.0] * len(docs)
+                ids = results["ids"][0] if "ids" in results else [""] * len(docs)
+
+                for doc, meta, dist, chunk_id in zip(docs, metas, dists, ids):
+                    similarity = round(1 - dist, 4) if dist is not None else 0.0
+                    retrieved.append({
+                        "id": chunk_id,
+                        "text": doc,
+                        "metadata": meta,
+                        "distance": dist,
+                        "similarity": similarity,
+                        "source": meta.get("source", "Unknown"),
+                        "page": meta.get("page", 1)
+                    })
+
+            return retrieved
+        except Exception as e:
+            logger.warning(f"ChromaDB retrieval notice: {e}. Falling back to 2G verified store.")
+            try:
+                from offline_engine import get_2g_response
+                match = get_2g_response(query)
+                if match and match.get("sources"):
+                    return match["sources"][:top_k]
+            except Exception:
+                pass
             return []
-
-        results = self.collection.query(
-            query_texts=[query],
-            n_results=min(top_k, self.collection.count()),
-            include=["documents", "metadatas", "distances"]
-        )
-
-        retrieved = []
-        if results and "documents" in results and results["documents"]:
-            docs = results["documents"][0]
-            metas = results["metadatas"][0] if "metadatas" in results else [{}] * len(docs)
-            dists = results["distances"][0] if "distances" in results else [0.0] * len(docs)
-            ids = results["ids"][0] if "ids" in results else [""] * len(docs)
-
-            for doc, meta, dist, chunk_id in zip(docs, metas, dists, ids):
-                similarity = round(1 - dist, 4) if dist is not None else 0.0
-                retrieved.append({
-                    "id": chunk_id,
-                    "text": doc,
-                    "metadata": meta,
-                    "distance": dist,
-                    "similarity": similarity,
-                    "source": meta.get("source", "Unknown"),
-                    "page": meta.get("page", 1)
-                })
-
-        return retrieved
 
     @staticmethod
     def format_conversation_history(history: Optional[List[Dict[str, Any]]], max_exchanges: int = 3) -> str:
