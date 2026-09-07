@@ -21,8 +21,11 @@ import chromadb
 from chromadb.api.types import EmbeddingFunction, Documents, Embeddings
 from groq import Groq
 import streamlit as st
+import logging
 from google import genai
 from google.genai import types
+
+logger = logging.getLogger(__name__)
 
 # Default Directory Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -582,12 +585,13 @@ Instructions:
         self,
         query: str,
         api_key: Optional[str] = None,
+        google_api_key: Optional[str] = None,
         model: str = DEFAULT_GROQ_MODEL,
         top_k: int = 5,
         history: Optional[List[Dict[str, str]]] = None,
         stream: bool = False
     ) -> Any:
-        """Retrieve context and generate answer via Gemini 2.0 Flash (primary) with Groq (fallback)."""
+        """Retrieve context and generate answer via Gemini 3.5 Flash (primary) with Groq (fallback)."""
         # Resolve conversation history
         effective_history = history
         if effective_history is None and hasattr(st, "session_state"):
@@ -656,36 +660,73 @@ Instructions:
         except Exception:
             pass
 
-        # Check for Gemini API Key
-        google_api_key = None
-        try:
-            if hasattr(st, "secrets") and "GOOGLE_API_KEY" in st.secrets:
-                google_api_key = str(st.secrets["GOOGLE_API_KEY"]).strip()
-        except Exception:
-            pass
-        if not google_api_key:
-            google_api_key = os.getenv("GOOGLE_API_KEY", "").strip()
-
-        # Check for Groq API Key
-        groq_api_key = api_key
-        if not groq_api_key:
+        # Resolve Gemini API Key (checking explicit argument, multiple casing, nested secrets tables, and env vars)
+        resolved_google_key = str(google_api_key).strip() if google_api_key else ""
+        if not resolved_google_key:
             try:
-                if hasattr(st, "secrets") and "GROQ_API_KEY" in st.secrets:
-                    groq_api_key = str(st.secrets["GROQ_API_KEY"]).strip()
+                if hasattr(st, "secrets"):
+                    for k in ["GOOGLE_API_KEY", "google_api_key", "GEMINI_API_KEY", "gemini_api_key"]:
+                        if k in st.secrets:
+                            resolved_google_key = str(st.secrets[k]).strip()
+                            break
+                    if not resolved_google_key:
+                        for val in st.secrets.values():
+                            if isinstance(val, dict):
+                                for k in ["GOOGLE_API_KEY", "google_api_key", "GEMINI_API_KEY", "gemini_api_key"]:
+                                    if k in val:
+                                        resolved_google_key = str(val[k]).strip()
+                                        break
+                                if resolved_google_key:
+                                    break
             except Exception:
                 pass
-            if not groq_api_key:
-                groq_api_key = os.getenv("GROQ_API_KEY", "").strip()
+        if not resolved_google_key:
+            resolved_google_key = os.getenv("GOOGLE_API_KEY", os.getenv("GEMINI_API_KEY", "")).strip()
+
+        # Resolve Groq API Key (checking explicit argument, multiple casing, nested secrets tables, and env vars)
+        resolved_groq_key = str(api_key).strip() if api_key else ""
+        if not resolved_groq_key:
+            try:
+                if hasattr(st, "secrets"):
+                    for k in ["GROQ_API_KEY", "groq_api_key"]:
+                        if k in st.secrets:
+                            resolved_groq_key = str(st.secrets[k]).strip()
+                            break
+                    if not resolved_groq_key:
+                        for val in st.secrets.values():
+                            if isinstance(val, dict):
+                                for k in ["GROQ_API_KEY", "groq_api_key"]:
+                                    if k in val:
+                                        resolved_groq_key = str(val[k]).strip()
+                                        break
+                                if resolved_groq_key:
+                                    break
+            except Exception:
+                pass
+        if not resolved_groq_key:
+            resolved_groq_key = os.getenv("GROQ_API_KEY", os.getenv("groq_api_key", "")).strip()
+
+        active_tier = st.session_state.get("active_model_tier", "simple") if hasattr(st, "session_state") else "simple"
+        system_content = SYSTEM_PROMPTS.get(active_tier, SYSTEM_PROMPTS["simple"])
+
+        # Prepare messages for Groq fallback
+        groq_messages = [{"role": "system", "content": system_content}]
+        if effective_history:
+            max_msgs = exchanges_to_keep * 2
+            recent_turns = [turn for turn in effective_history if turn.get("role") in ["user", "assistant"]][-max_msgs:]
+            for turn in recent_turns:
+                role = "user" if turn.get("role") == "user" else "assistant"
+                groq_messages.append({"role": role, "content": turn.get("content", "")})
+        groq_messages.append({"role": "user", "content": prompt})
+
+        groq_model = model if model and not any(d in model for d in ["llama3-8b-8192", "llama-3.3-70b-versatile", "llama3-70b-8192"]) else DEFAULT_GROQ_MODEL
 
         # 1. Attempt Primary: Gemini via Google GenAI SDK (Sub-second TTFT, multilingual)
-        if google_api_key:
+        if resolved_google_key:
             try:
                 routed_cfg = get_routed_model_info(query, history_length)
                 active_model_id = routed_cfg["model_id"]
-                active_tier = routed_cfg["tier"]
-                system_content = SYSTEM_PROMPTS.get(active_tier, SYSTEM_PROMPTS["simple"])
-
-                client_genai = self.get_genai_client(google_api_key)
+                client_genai = self.get_genai_client(resolved_google_key)
 
                 # Format conversation history for google.genai chat
                 genai_history = []
@@ -710,12 +751,31 @@ Instructions:
 
                 if stream:
                     response_stream = chat.send_message_stream(prompt)
-                    def stream_generator() -> Generator[str, None, None]:
-                        for chunk in response_stream:
-                            if chunk.text:
-                                yield chunk.text
+
+                    def resilient_stream_generator() -> Generator[str, None, None]:
+                        try:
+                            for chunk in response_stream:
+                                if chunk.text:
+                                    yield chunk.text
+                        except Exception as stream_err:
+                            logger.warning(f"Gemini streaming exception: {stream_err}. Attempting Groq fallback...")
+                            if resolved_groq_key:
+                                groq_client = self.get_groq_client(resolved_groq_key)
+                                stream_resp = groq_client.chat.completions.create(
+                                    model=groq_model,
+                                    messages=groq_messages,
+                                    max_tokens=1024,
+                                    temperature=0.3,
+                                    stream=True
+                                )
+                                for chunk in stream_resp:
+                                    if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                                        yield chunk.choices[0].delta.content
+                            else:
+                                raise stream_err
+
                     return {
-                        "stream": stream_generator(),
+                        "stream": resilient_stream_generator(),
                         "sources": context_chunks,
                         "search_query": search_query,
                         "model_used": active_model_id
@@ -736,26 +796,13 @@ Instructions:
                         "model_used": active_model_id
                     }
             except Exception as e:
-                # If Gemini fails and no Groq fallback is configured, re-raise for diagnostic handling
-                if not groq_api_key:
+                logger.warning(f"Gemini primary failed: {e}. Falling back to Groq if available.")
+                if not resolved_groq_key:
                     raise e
 
-        # 2. Attempt Fallback: Groq (Direct Groq SDK with active qwen/qwen3.8-27b)
-        if groq_api_key:
-            active_tier = st.session_state.get("active_model_tier", "simple") if hasattr(st, "session_state") else "simple"
-            system_content = SYSTEM_PROMPTS.get(active_tier, SYSTEM_PROMPTS["simple"])
-
-            groq_messages = [{"role": "system", "content": system_content}]
-            if effective_history:
-                max_msgs = exchanges_to_keep * 2
-                recent_turns = [turn for turn in effective_history if turn.get("role") in ["user", "assistant"]][-max_msgs:]
-                for turn in recent_turns:
-                    role = "user" if turn.get("role") == "user" else "assistant"
-                    groq_messages.append({"role": role, "content": turn.get("content", "")})
-            groq_messages.append({"role": "user", "content": prompt})
-
-            groq_client = self.get_groq_client(groq_api_key)
-            groq_model = model if model and not any(d in model for d in ["llama3-8b-8192", "llama-3.3-70b-versatile", "llama3-70b-8192"]) else DEFAULT_GROQ_MODEL
+        # 2. Attempt Fallback: Groq (Direct Groq SDK with active model)
+        if resolved_groq_key:
+            groq_client = self.get_groq_client(resolved_groq_key)
 
             if stream:
                 stream_resp = groq_client.chat.completions.create(
@@ -790,6 +837,6 @@ Instructions:
                     "model_used": f"{groq_model} (Groq Fallback)"
                 }
 
-        raise ValueError("Neither GOOGLE_API_KEY nor GROQ_API_KEY is configured.")
+        raise ValueError("Neither GOOGLE_API_KEY nor GROQ_API_KEY is configured in Streamlit Secrets or environment.")
 
 

@@ -354,19 +354,17 @@ def get_groq_api_key() -> str:
 # Retrieve GOOGLE_API_KEY securely from st.secrets or environment
 def get_google_api_key() -> str:
     try:
-        if "GOOGLE_API_KEY" in st.secrets:
-            return str(st.secrets["GOOGLE_API_KEY"]).strip()
-        if "google_api_key" in st.secrets:
-            return str(st.secrets["google_api_key"]).strip()
+        for k in ["GOOGLE_API_KEY", "google_api_key", "GEMINI_API_KEY", "gemini_api_key"]:
+            if k in st.secrets:
+                return str(st.secrets[k]).strip()
         for val in st.secrets.values():
             if isinstance(val, dict):
-                if "GOOGLE_API_KEY" in val:
-                    return str(val["GOOGLE_API_KEY"]).strip()
-                if "google_api_key" in val:
-                    return str(val["google_api_key"]).strip()
+                for k in ["GOOGLE_API_KEY", "google_api_key", "GEMINI_API_KEY", "gemini_api_key"]:
+                    if k in val:
+                        return str(val[k]).strip()
     except Exception:
         pass
-    return os.getenv("GOOGLE_API_KEY", os.getenv("google_api_key", "")).strip()
+    return os.getenv("GOOGLE_API_KEY", os.getenv("GEMINI_API_KEY", os.getenv("google_api_key", ""))).strip()
 
 groq_api_key = get_groq_api_key()
 google_api_key = get_google_api_key()
@@ -1718,6 +1716,23 @@ with st.sidebar:
             unsafe_allow_html=True
         )
 
+    # Cloud AI Health & Key Diagnostics (Provides full visibility into API connectivity)
+    with st.sidebar.expander("☁️ Cloud API Status & Secrets", expanded=False):
+        if google_api_key:
+            st.markdown("🟢 **Google Gemini API**: Connected")
+            st.caption(f"Active Model: `{st.session_state.get('active_model_id', 'gemini-3.5-flash')}`")
+        else:
+            st.markdown("🔴 **Google Gemini API**: Not Found in Secrets")
+            st.caption("Please paste `GOOGLE_API_KEY = '...'` in Streamlit Cloud Settings > Secrets.")
+
+        if groq_api_key:
+            st.markdown("🟢 **Groq LLM Backup**: Connected")
+        else:
+            st.markdown("⚪ **Groq LLM Backup**: Not configured")
+
+        if not google_api_key and not groq_api_key:
+            st.info("⚡ **Running in 2G Edge Mode**: Zero external cloud dependencies. Responses served locally from verified J&K documents.")
+
     st.divider()
 
     # Advanced Retrieval Configuration (Grouped for Cleanliness)
@@ -2131,6 +2146,7 @@ with tabs[0]:
                             gen_result = rag_engine.generate_answer(
                                 query=cloud_query,
                                 api_key=groq_api_key,
+                                google_api_key=google_api_key,
                                 model=st.session_state.selected_model,
                                 top_k=top_k,
                                 history=st.session_state.messages[:-1],
@@ -2142,6 +2158,7 @@ with tabs[0]:
                                 gen_result = rag_engine.generate_answer(
                                     query=cloud_query,
                                     api_key=groq_api_key,
+                                    google_api_key=google_api_key,
                                     model=st.session_state.selected_model,
                                     top_k=top_k,
                                     history=st.session_state.messages[:-1],
@@ -2174,6 +2191,13 @@ with tabs[0]:
                     except Exception as e:
                         if offline_match:
                             st.info("⚡ **2G Edge Engine Auto-Failover**: Remote 4G/border network resilience activated. Serving verified answer in 0.27ms with zero cloud dependencies.")
+                            with st.expander("🔍 Cloud Diagnostic Details (Why Failover Activated)", expanded=False):
+                                st.error(f"**Cloud Failure Reason**: `{type(e).__name__}: {str(e)}`")
+                                if not google_api_key:
+                                    st.warning("⚠️ **Missing Gemini API Key**: `GOOGLE_API_KEY` was not detected in Streamlit Secrets (`secrets.toml` or Streamlit Cloud Settings > Secrets).")
+                                if not groq_api_key:
+                                    st.caption("ℹ️ No backup `GROQ_API_KEY` configured in Streamlit Secrets.")
+                                st.caption("🛡️ **Edge Resilience**: J&K EduSetu maintained 100% uptime with zero cloud dependencies by serving from local government archives.")
                             full_response = offline_match["answer"]
                             st.markdown(full_response)
                             portal_url = offline_match.get("portal_url", "")
