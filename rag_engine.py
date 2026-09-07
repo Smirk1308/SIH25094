@@ -683,7 +683,10 @@ Instructions:
                 groq_messages.append({"role": role, "content": turn.get("content", "")})
         groq_messages.append({"role": "user", "content": prompt})
 
-        groq_model = model if model and not any(d in model for d in ["llama3-8b-8192", "llama-3.3-70b-versatile", "llama3-70b-8192"]) else DEFAULT_GROQ_MODEL
+        # Ensure Groq model is strictly a Groq-hosted model, NEVER a Gemini model ID!
+        groq_model = DEFAULT_GROQ_MODEL
+        if model and not any(p in model.lower() for p in ["gemini", "gpt", "claude"]) and not any(d in model for d in ["llama3-8b-8192", "llama3-70b-8192"]):
+            groq_model = model
 
         # 1. Attempt Primary: Gemini via Google GenAI SDK (Sub-second TTFT, multilingual)
         if resolved_google_key:
@@ -728,7 +731,7 @@ Instructions:
                                 stream_resp = groq_client.chat.completions.create(
                                     model=groq_model,
                                     messages=groq_messages,
-                                    max_tokens=1024,
+                                    max_tokens=800,
                                     temperature=0.3,
                                     stream=True
                                 )
@@ -772,7 +775,7 @@ Instructions:
                 stream_resp = groq_client.chat.completions.create(
                     model=groq_model,
                     messages=groq_messages,
-                    max_tokens=1024,
+                    max_tokens=800,
                     temperature=0.3,
                     stream=True
                 )
@@ -790,7 +793,7 @@ Instructions:
                 resp = groq_client.chat.completions.create(
                     model=groq_model,
                     messages=groq_messages,
-                    max_tokens=1024,
+                    max_tokens=800,
                     temperature=0.3
                 )
                 content = resp.choices[0].message.content if resp.choices else ""
