@@ -1062,11 +1062,50 @@ iframe[title*="streamlit_components_v1_html"] {
         height: 10px !important;
     }
 
-    /* 13. Sidebar Width Optimization on Mobile */
-    [data-testid="stSidebar"] {
-        width: min(330px, 85vw) !important;
-        max-width: 85vw !important;
+    /* 13. Mobile Sidebar: Strict Retract & Expand (Zero Visible Sliver) */
+    [data-testid="stSidebar"][aria-expanded="false"],
+    section[data-testid="stSidebar"][aria-expanded="false"],
+    .stSidebar[aria-expanded="false"] {
+        transform: translateX(-150%) !important;
+        margin-left: -100vw !important;
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        overflow: hidden !important;
     }
+
+    [data-testid="stSidebar"][aria-expanded="true"],
+    section[data-testid="stSidebar"][aria-expanded="true"],
+    .stSidebar[aria-expanded="true"] {
+        width: min(320px, 82vw) !important;
+        max-width: 82vw !important;
+        transform: translateX(0) !important;
+        margin-left: 0 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5) !important;
+        z-index: 999999 !important;
+    }
+}
+
+/* Global enforcement: 100% hide collapsed sidebar across all viewports */
+[data-testid="stSidebar"][aria-expanded="false"],
+section[data-testid="stSidebar"][aria-expanded="false"],
+.stSidebar[aria-expanded="false"] {
+    transform: translateX(-150%) !important;
+    margin-left: -100vw !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    border-right: none !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
 }
 
 footer { visibility: hidden; }
@@ -1076,7 +1115,7 @@ footer { visibility: hidden; }
 
 # ==========================================
 # MODERN MOBILE & DRAWER SIDEBAR CONTROLLER
-# Touch-outside-to-hide + Backdrop dismissal
+# Touch-outside-to-hide + 100% Offscreen Retract
 # ==========================================
 components.html(
     """
@@ -1106,7 +1145,37 @@ components.html(
                 return rect.width > 50 && rect.right > 50;
             }
 
-            // 3. Helper to close sidebar safely with debounce
+            // 3. Synchronize sidebar visibility and backdrop
+            function syncSidebar() {
+                const sidebar = doc.querySelector('[data-testid="stSidebar"]');
+                if (!sidebar) return;
+                const open = isSidebarOpen();
+                const isMobileOrDrawer = (win.innerWidth <= 1024);
+
+                if (open) {
+                    sidebar.style.removeProperty('visibility');
+                    sidebar.style.removeProperty('transform');
+                    sidebar.style.removeProperty('margin-left');
+                    sidebar.style.removeProperty('width');
+                    if (isMobileOrDrawer) {
+                        backdrop.style.opacity = '1';
+                        backdrop.style.pointerEvents = 'auto';
+                    } else {
+                        backdrop.style.opacity = '0';
+                        backdrop.style.pointerEvents = 'none';
+                    }
+                } else {
+                    // Fully retract 100% off screen so zero strip remains
+                    sidebar.style.setProperty('visibility', 'hidden', 'important');
+                    sidebar.style.setProperty('transform', 'translateX(-150%)', 'important');
+                    sidebar.style.setProperty('margin-left', '-100vw', 'important');
+                    sidebar.style.setProperty('width', '0px', 'important');
+                    backdrop.style.opacity = '0';
+                    backdrop.style.pointerEvents = 'none';
+                }
+            }
+
+            // 4. Helper to close sidebar safely with debounce and immediate retraction
             let lastCloseTime = 0;
             function closeSidebar() {
                 const now = Date.now();
@@ -1129,19 +1198,9 @@ components.html(
                         collapseBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: win }));
                     } catch (e) {}
                 }
-            }
-
-            // 4. Synchronize backdrop visibility with sidebar state
-            function syncBackdrop() {
-                const open = isSidebarOpen();
-                const isMobileOrDrawer = (win.innerWidth <= 1024);
-                if (open && isMobileOrDrawer) {
-                    backdrop.style.opacity = '1';
-                    backdrop.style.pointerEvents = 'auto';
-                } else {
-                    backdrop.style.opacity = '0';
-                    backdrop.style.pointerEvents = 'none';
-                }
+                setTimeout(syncSidebar, 50);
+                setTimeout(syncSidebar, 150);
+                setTimeout(syncSidebar, 350);
             }
 
             // 5. Tap or click on backdrop immediately dismisses sidebar
@@ -1189,10 +1248,10 @@ components.html(
                 doc.addEventListener('touchstart', handleOutside, { passive: true, capture: true });
             }
 
-            // 7. Observer to sync backdrop when sidebar toggles
+            // 7. Observer to sync backdrop and off-screen state when sidebar toggles
             if (!win.__edusetu_observer) {
                 win.__edusetu_observer = new MutationObserver(function() {
-                    syncBackdrop();
+                    syncSidebar();
                 });
                 const sidebar = doc.querySelector('[data-testid="stSidebar"]');
                 if (sidebar) {
@@ -1200,13 +1259,14 @@ components.html(
                 } else {
                     win.__edusetu_observer.observe(doc.body, { childList: true, subtree: true });
                 }
-                win.addEventListener('resize', syncBackdrop);
+                win.addEventListener('resize', syncSidebar);
             }
 
             // Initial sync
-            syncBackdrop();
-            setTimeout(syncBackdrop, 200);
-            setTimeout(syncBackdrop, 600);
+            syncSidebar();
+            setTimeout(syncSidebar, 100);
+            setTimeout(syncSidebar, 400);
+            setTimeout(syncSidebar, 1000);
 
         } catch (err) {
             console.warn('EduSetu sidebar dismiss init:', err);
