@@ -501,18 +501,11 @@ div[data-baseweb="popover"] > div,
 div[data-baseweb="menu"],
 ul[data-baseweb="menu"],
 ul[role="listbox"],
-div[role="listbox"],
-div[id^="bui-"] {
+div[role="listbox"] {
     background-color: #FFFFFF !important;
     border-radius: 10px !important;
     border: 1px solid #CBD5E1 !important;
     box-shadow: 0 12px 36px rgba(13, 33, 55, 0.28) !important;
-    z-index: 10000005 !important;
-}
-
-div:has(> [data-baseweb="popover"]),
-div:has(> [data-baseweb="menu"]),
-div:has(> [role="listbox"]) {
     z-index: 10000005 !important;
 }
 
@@ -789,17 +782,32 @@ ul[role="listbox"] li[aria-selected="true"] {
     cursor: pointer;
 }
 
-/* Zero-height component iframe styling so it takes zero layout space */
+@media (min-width: 1025px) {
+    #edusetu-sidebar-backdrop {
+        display: none !important;
+        pointer-events: none !important;
+    }
+}
+
+/* Zero-height component iframe styling so it takes zero layout space without suspending JS */
 iframe[title*="streamlit_components_v1_html"] {
-    display: none !important;
+    position: absolute !important;
+    top: -9999px !important;
+    left: -9999px !important;
     height: 0 !important;
     width: 0 !important;
+    border: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 [data-testid="stCustomComponentV1"]:has(iframe[height="0"]) {
-    display: none !important;
+    position: absolute !important;
+    top: -9999px !important;
+    left: -9999px !important;
     height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+    pointer-events: none !important;
 }
 
 /* App background subtle mesh gradient */
@@ -1356,22 +1364,6 @@ iframe[title*="streamlit_components_v1_html"] {
     }
 }
 
-/* Global enforcement: 100% hide collapsed sidebar across all viewports */
-[data-testid="stSidebar"][aria-expanded="false"],
-section[data-testid="stSidebar"][aria-expanded="false"],
-.stSidebar[aria-expanded="false"] {
-    transform: translateX(-150%) !important;
-    margin-left: -100vw !important;
-    width: 0 !important;
-    min-width: 0 !important;
-    max-width: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-    border-right: none !important;
-    box-shadow: none !important;
-    overflow: hidden !important;
-}
-
 footer { visibility: hidden; }
 #MainMenu { visibility: hidden; }
 </style>
@@ -1407,7 +1399,7 @@ components.html(
                 const expanded = sidebar.getAttribute('aria-expanded');
                 if (expanded !== null) return expanded === 'true';
                 const rect = sidebar.getBoundingClientRect();
-                return rect.width > 50 && rect.right > 50;
+                return rect.width > 50;
             }
 
             // Check if any dropdown menu, popover, or listbox is open on screen
@@ -1415,8 +1407,7 @@ components.html(
                 return !!(
                     doc.querySelector('[data-baseweb="popover"]') ||
                     doc.querySelector('[role="listbox"]') ||
-                    doc.querySelector('[data-baseweb="menu"]') ||
-                    doc.querySelector('div[id^="bui-"]')
+                    doc.querySelector('[data-baseweb="menu"]')
                 );
             }
 
@@ -1442,38 +1433,58 @@ components.html(
                     el.closest('[data-testid="stSidebarCollapsedControl"]') ||
                     el.closest('[data-testid="collapsedControl"]') ||
                     el.closest('[data-testid="stSidebarCollapseButton"]') ||
-                    el.closest('div[id^="bui-"]') ||
                     el.closest('[data-baseweb]')
                 );
             }
 
-            // 3. Synchronize sidebar visibility and backdrop
+            // 3. Synchronize sidebar visibility and backdrop (Desktop is 100% native, Mobile is drawer)
+            let isSyncing = false;
             function syncSidebar() {
-                const sidebar = doc.querySelector('[data-testid="stSidebar"]');
-                if (!sidebar) return;
-                const open = isSidebarOpen();
-                const isMobileOrDrawer = (win.innerWidth <= 1024);
+                if (isSyncing) return;
+                try {
+                    isSyncing = true;
+                    const sidebar = doc.querySelector('[data-testid="stSidebar"]');
+                    if (!sidebar) return;
+                    const isMobileOrDrawer = (win.innerWidth <= 1024);
 
-                if (open) {
-                    sidebar.style.removeProperty('visibility');
-                    sidebar.style.removeProperty('transform');
-                    sidebar.style.removeProperty('margin-left');
-                    sidebar.style.removeProperty('width');
-                    if (isMobileOrDrawer) {
+                    // ON DESKTOP (> 1024px): Let Streamlit handle layout natively. Clean up any drawer styles.
+                    if (!isMobileOrDrawer) {
+                        sidebar.style.removeProperty('visibility');
+                        sidebar.style.removeProperty('transform');
+                        sidebar.style.removeProperty('margin-left');
+                        sidebar.style.removeProperty('width');
+                        if (backdrop) {
+                            backdrop.style.display = 'none';
+                            backdrop.style.opacity = '0';
+                            backdrop.style.pointerEvents = 'none';
+                        }
+                        return;
+                    }
+
+                    // ON MOBILE / TABLETS (<= 1024px): Drawer mode with touch backdrop
+                    if (backdrop) {
+                        backdrop.style.display = 'block';
+                    }
+                    const open = isSidebarOpen();
+
+                    if (open) {
+                        sidebar.style.removeProperty('visibility');
+                        sidebar.style.removeProperty('transform');
+                        sidebar.style.removeProperty('margin-left');
+                        sidebar.style.removeProperty('width');
                         backdrop.style.opacity = '1';
                         backdrop.style.pointerEvents = 'auto';
                     } else {
+                        // Fully retract 100% off screen on mobile so zero strip remains
+                        sidebar.style.setProperty('visibility', 'hidden', 'important');
+                        sidebar.style.setProperty('transform', 'translateX(-150%)', 'important');
+                        sidebar.style.setProperty('margin-left', '-100vw', 'important');
+                        sidebar.style.setProperty('width', '0px', 'important');
                         backdrop.style.opacity = '0';
                         backdrop.style.pointerEvents = 'none';
                     }
-                } else {
-                    // Fully retract 100% off screen so zero strip remains
-                    sidebar.style.setProperty('visibility', 'hidden', 'important');
-                    sidebar.style.setProperty('transform', 'translateX(-150%)', 'important');
-                    sidebar.style.setProperty('margin-left', '-100vw', 'important');
-                    sidebar.style.setProperty('width', '0px', 'important');
-                    backdrop.style.opacity = '0';
-                    backdrop.style.pointerEvents = 'none';
+                } finally {
+                    isSyncing = false;
                 }
             }
 
@@ -1549,6 +1560,9 @@ components.html(
             }
 
             const handleOutsideClick = function(e) {
+                // Strictly only apply outside-click dismissal on mobile/tablet drawer viewports
+                if (win.innerWidth > 1024) return;
+
                 const sidebar = doc.querySelector('[data-testid="stSidebar"]');
                 if (!sidebar || !isSidebarOpen()) return;
 
@@ -1561,11 +1575,7 @@ components.html(
                 // If any dropdown menu or popover is open anywhere on the page, DO NOT dismiss
                 if (isDropdownOrMenuOpen()) return;
 
-                // On mobile/tablets (<1024px), dismiss sidebar when tapping main content outside
-                const isMobileOrDrawer = (win.innerWidth <= 1024);
-                if (isMobileOrDrawer) {
-                    closeSidebar();
-                }
+                closeSidebar();
             };
 
             win.__edusetu_outside_click_handler = handleOutsideClick;
@@ -1578,7 +1588,7 @@ components.html(
                 });
                 const sidebar = doc.querySelector('[data-testid="stSidebar"]');
                 if (sidebar) {
-                    win.__edusetu_observer.observe(sidebar, { attributes: true, attributeFilter: ['aria-expanded', 'class', 'style'] });
+                    win.__edusetu_observer.observe(sidebar, { attributes: true, attributeFilter: ['aria-expanded', 'class'] });
                 } else {
                     win.__edusetu_observer.observe(doc.body, { childList: true, subtree: true });
                 }
