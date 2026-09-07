@@ -1282,7 +1282,7 @@ with tabs[3]:
 
                 if st.button("💬 Ask AI for Step-by-Step Skill Upgrade Roadmap", key="btn_skill_tab_ai"):
                     skills_text = ", ".join(selected_skills)
-                    top_careers = ", ".join([c.get("title", c.get("job_title", "")) for c in career_matches[:3]])
+                    top_careers = ", ".join([c.get("job", {}).get("title", c.get("title", "")) for c in career_matches[:3]])
                     st.session_state.messages.append({
                         "role": "user",
                         "content": f"I currently know: {skills_text}. My target careers are: {top_careers}. Provide a month-by-month study roadmap to bridge my skill gaps."
